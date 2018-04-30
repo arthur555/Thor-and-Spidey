@@ -53,7 +53,6 @@ Request * accept_request(int sfd) {
     if((getnameinfo(&raddr, rlen, r->host, NI_MAXHOST, r->port, NI_MAXHOST, 0)) < 0)
     {
         log("Failed to get client info: %s\n", strerror(errno));
-        close(r->fd);
         goto fail;
     }
 
@@ -62,7 +61,6 @@ Request * accept_request(int sfd) {
     if(!r->file)
     {
         log("Couldn't open stream: %s\n", strerror(errno));
-        close(r->fd);
         goto fail;
     }
 
@@ -71,10 +69,7 @@ Request * accept_request(int sfd) {
 
 fail:
     /* Deallocate request struct */
-    if(r != NULL)
-    {
-        free(r);
-    }
+    free_request(r);
 
     return NULL;
 }
@@ -97,12 +92,36 @@ void free_request(Request *r) {
     }
 
     /* Close socket or fd */
+    if(r->file != NULL)
+    {
+        fclose(r->file);
+    }
+    else if(r->fd > 0)
+    {
+        close(r->fd);
+    }
 
     /* Free allocated strings */
+    if(r->host != NULL)
+    {
+        free(r->host);
+    }
+
+    if(r->port != NULL)
+    {
+        free(r->port);
+    }
 
     /* Free headers */
+    for(auto it = headers; it != NULL; )
+    {
+        auto curr = it;
+        it = it->next;
+        free(curr);
+    }
 
     /* Free request */
+    free(r);
 }
 
 /**
@@ -116,8 +135,17 @@ void free_request(Request *r) {
  **/
 int parse_request(Request *r) {
     /* Parse HTTP Request Method */
+    if(parse_request_method(r) < 0)
+    {
+        return -1;
+    }
 
-    /* Parse HTTP Requet Headers*/
+    /* Parse HTTP Request Headers*/
+    if(parse_request_headers(r) < 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
@@ -145,8 +173,32 @@ int parse_request_method(Request *r) {
     char *query;
 
     /* Read line from socket */
+    if((fgets(buffer, BUFSIZ, r->file)) == NULL || strlen(buffer) == 0)
+    {
+        log("No more requests to read: \n");
+        goto fail;
+    }
 
     /* Parse method and uri */
+    method = strtok(buffer, WHITESPACE);
+    if(method == NULL)
+    {
+        goto fail;
+    }
+    else
+    {
+        if((r->method = calloc(1, strlen(method) + 1)) == NULL)
+        {
+            log("Unable to allocate memory: %s\n", strerror(errno));
+            goto fail;
+        }
+        else
+        {
+            strcpy(r->method, method);
+        }
+    }
+
+    uri = strtok(NULL, "?");
 
     /* Parse query from uri */
 
