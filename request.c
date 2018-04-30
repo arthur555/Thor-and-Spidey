@@ -39,6 +39,8 @@ Request * accept_request(int sfd) {
         goto fail;
     }
 
+    //TODO?: May need to initialize headers
+
     /* Accept a client */
     r->fd = accept(sfd, &raddr, &rlen);
     if(r->fd < 0)
@@ -48,22 +50,21 @@ Request * accept_request(int sfd) {
     }
 
     /* Lookup client information */
-    struct addrinfo  hints = {
-        .ai_family   = AF_UNSPEC,   /* Return IPv4 and IPv6 choices */
-        .ai_socktype = SOCK_STREAM, /* Use TCP */
-        .ai_flags    = AI_PASSIVE,  /* Use all interfaces */
-    };
-    struct addrinfo *results;
-    int status;
-    if ((status = getaddrinfo(NULL, port, &hints, &results)) != 0) {
-        log("getaddrinfo failed: %s\n", gai_strerror(status));
+    if((getnameinfo(&raddr, rlen, r->host, NI_MAXHOST, r->port, NI_MAXHOST, 0)) < 0)
+    {
+        log("Failed to get client info: %s\n", strerror(errno));
+        close(r->fd);
         goto fail;
     }
 
-    freeaddrinfo(results);
-
     /* Open socket stream */
-    r->file = fdopen(r->fd);
+    r->file = fdopen(r->fd, );
+    if(!r->file)
+    {
+        log("Couldn't open stream: %s\n", strerror(errno));
+        close(r->fd);
+        goto fail;
+    }
 
     log("Accepted request from %s:%s", r->host, r->port);
     return r;
