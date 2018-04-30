@@ -13,7 +13,7 @@ spidey: 	forking.o handler.o request.o single.o socket.o spidey.o utils.o
 
 
 %.o: 	%.c
-	$(CC) $(CFLAGS) -c -o $@ $^
+	$(CC) $(CFLAGS) -c $^
 
 clean:
 	@echo Cleaning...

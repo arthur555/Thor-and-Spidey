@@ -39,13 +39,11 @@ Request * accept_request(int sfd) {
         goto fail;
     }
 
-    //TODO?: May need to initialize headers
-
     /* Accept a client */
     r->fd = accept(sfd, &raddr, &rlen);
     if(r->fd < 0)
     {
-        log("accept failed: %s\n");
+        log("accept failed: %s\n", strerror(errno));
         goto fail;
     }
 
@@ -57,7 +55,7 @@ Request * accept_request(int sfd) {
     }
 
     /* Open socket stream */
-    r->file = fdopen(r->fd, );
+    r->file = fdopen(r->fd, "w+");
     if(!r->file)
     {
         log("Couldn't open stream: %s\n", strerror(errno));
@@ -113,10 +111,10 @@ void free_request(Request *r) {
     }
 
     /* Free headers */
-    for(auto it = headers; it != NULL; )
+    for(Header * head = r->headers; head != NULL; )
     {
-        auto curr = it;
-        it = it->next;
+        Header * curr = head;
+        head = head->next;
         free(curr);
     }
 
@@ -209,6 +207,25 @@ int parse_request_method(Request *r) {
         strcpy(r->method, method);
     }
 
+    if((r->uri = calloc(1, strlen(uri) + 1)) == NULL)
+    {
+        log("Unable to allocate memory: %s\n", strerror(errno));
+        goto fail;
+    }
+    else
+    {
+        strcpy(r->uri, uri);
+    }
+
+    if(query != NULL || (r->query = calloc(1, strlen(query) + 1)) == NULL)
+    {
+        log("Unable to allocate memory: %s\n", strerror(errno));
+        goto fail;
+    }
+    else
+    {
+        strcpy(r->query, query);
+    }
     debug("HTTP METHOD: %s", r->method);
     debug("HTTP URI:    %s", r->uri);
     debug("HTTP QUERY:  %s", r->query);
@@ -272,7 +289,7 @@ int parse_request_headers(Request *r) {
         }
 
         // create and allocate header
-        if((curr = calloc(1, sizeof(header))) == NULL)
+        if((curr = calloc(1, sizeof(Header))) == NULL)
         {
             log("Couldn't allocate memory: %s\n", strerror(errno));
             goto fail;
