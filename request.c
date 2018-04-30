@@ -30,21 +30,51 @@ int parse_request_headers(Request *r);
 Request * accept_request(int sfd) {
     Request *r;
     struct sockaddr raddr;
-    socklen_t rlen;
+    socklen_t rlen = sizeof(struct sockaddr);
 
     /* Allocate request struct (zeroed) */
+    if((r = calloc(1, sizeof(Request))) == NULL)
+    {
+        log("Couldn't allocate memory: %s\n", strerror(errno));
+        goto fail;
+    }
 
     /* Accept a client */
+    r->fd = accept(sfd, &raddr, &rlen);
+    if(r->fd < 0)
+    {
+        log("accept failed: %s\n");
+        goto fail;
+    }
 
     /* Lookup client information */
+    struct addrinfo  hints = {
+        .ai_family   = AF_UNSPEC,   /* Return IPv4 and IPv6 choices */
+        .ai_socktype = SOCK_STREAM, /* Use TCP */
+        .ai_flags    = AI_PASSIVE,  /* Use all interfaces */
+    };
+    struct addrinfo *results;
+    int status;
+    if ((status = getaddrinfo(NULL, port, &hints, &results)) != 0) {
+        log("getaddrinfo failed: %s\n", gai_strerror(status));
+        goto fail;
+    }
+
+    freeaddrinfo(results);
 
     /* Open socket stream */
+    r->file = fdopen(r->fd);
 
     log("Accepted request from %s:%s", r->host, r->port);
     return r;
 
 fail:
     /* Deallocate request struct */
+    if(r != NULL)
+    {
+        free(r);
+    }
+
     return NULL;
 }
 
