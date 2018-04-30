@@ -181,28 +181,33 @@ int parse_request_method(Request *r) {
 
     /* Parse method and uri */
     method = strtok(buffer, WHITESPACE);
-    if(method == NULL)
+    if(method == NULL || strlen(method) == 0)
     {
+        log("Cannot find method\n");
+        goto fail;
+    }
+
+    uri = strtok(NULL, " ");
+    if(uri == NULL || strlen(uri) == 0 || uri[0] != '/')
+    {
+        log("Cannot find uri\n");
+        goto fail;
+    }
+
+    /* Parse query from uri */
+    uri = strtok(uri, "?");
+    query = strtok(NULL, " ");
+
+    /* Record method, uri, and query in request struct */
+    if((r->method = calloc(1, strlen(method) + 1)) == NULL)
+    {
+        log("Unable to allocate memory: %s\n", strerror(errno));
         goto fail;
     }
     else
     {
-        if((r->method = calloc(1, strlen(method) + 1)) == NULL)
-        {
-            log("Unable to allocate memory: %s\n", strerror(errno));
-            goto fail;
-        }
-        else
-        {
-            strcpy(r->method, method);
-        }
+        strcpy(r->method, method);
     }
-
-    uri = strtok(NULL, "?");
-
-    /* Parse query from uri */
-
-    /* Record method, uri, and query in request struct */
 
     debug("HTTP METHOD: %s", r->method);
     debug("HTTP URI:    %s", r->uri);
@@ -248,6 +253,61 @@ int parse_request_headers(Request *r) {
     char *value;
 
     /* Parse headers from socket */
+    while(fgets(buffer, BUFSIZ, r->file) != NULL && strlen(buffer) > 0)
+    {
+        name = strtok(buffer, ":");
+        if(name == NULL || strlen(name) == 0)
+        {
+            log("Couldn't find name\n");
+            goto fail;
+        }
+
+        // skip space
+        strtok(NULL, " ");
+        value = strtok(NULL, "");
+        if(value == NULL || strlen(value) == 0)
+        {
+            log("Couldn't find value\n");
+            goto fail;
+        }
+
+        // create and allocate header
+        if((curr = calloc(1, sizeof(header))) == NULL)
+        {
+            log("Couldn't allocate memory: %s\n", strerror(errno));
+            goto fail;
+        }
+
+        if((curr->name = calloc(1, sizeof(strlen(name) + 1))) == NULL)
+        {
+            log("Couldn't allocate memory: %s\n", strerror(errno));
+            goto fail;
+        }
+        else
+        {
+            strcpy(curr->name, name);
+        }
+
+        if((curr->value = calloc(1, sizeof(strlen(value) + 1))) == NULL)
+        {
+            log("Couldn't allocate memory: %s\n", strerror(errno));
+            goto fail;
+        }
+        else
+        {
+            strcpy(curr->value, value);
+        }
+        
+        // if list doesn't have root
+        if(r->headers == NULL)
+        {
+            r->headers = curr;
+        }
+        
+        // move to next header
+        curr = curr->next;
+        
+    }
 
 #ifndef NDEBUG
     for (struct header *header = r->headers; header != NULL; header = header->next) {
