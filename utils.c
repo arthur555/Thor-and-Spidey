@@ -45,9 +45,26 @@ char * determine_mimetype(const char *path) {
         debug("Failed to open MimeTypePath: ", MimeTypePath);
     }
     while(fgets(buffer, BUFSIZ, fs)){
+        mimetype = strtok(buffer," ");
+        token = mimetype;
+        while(token!= NULL){
+            token = strtok(NULL, s);
+            token = skip_nonwhitespace(token);
+            if (strteq(token, ext))
+                {
+                    debug("Mimetype matched: ", mimetype);
+                    
+                    char * mime = calloc(1, strlen(mimetype)+1);
+                    strcpy(mime, mimetype)
+                    return mime;
+                }
 
+        }
     }
-
+    fclose(fs);
+    debug ("Mimetype not found, using defualt mimetype: ", DefaultMimeType);
+    char * mime = calloc(1, strlen(DefaultMimeType)+1);
+    strcpy(mime, DefaultMimeType);
     /* Find file extension */
     
     /* Open MimeTypesPath file */
@@ -74,7 +91,14 @@ char * determine_mimetype(const char *path) {
  * string must later be free'd.
  **/
 char * determine_request_path(const char *uri) {
-    return NULL;
+    char[PATH_MAX] path;
+    strcat(path, RootPath);
+    strcat(path, uri);
+    char* pathh = realpath(uri, NULL);
+    if (!streq(path, pathh))
+        return NULL;
+
+    return pathh;
 }
 
 /**
@@ -93,7 +117,8 @@ const char * http_status_string(HTTPStatus status) {
         "500 Internal Server Error",
         "418 I'm A Teapot",
     };
-
+    if(status < 5)
+        return StatusStrings[status];
     return NULL;
 }
 
@@ -104,6 +129,7 @@ const char * http_status_string(HTTPStatus status) {
  * @return  Point to first whitespace character in s.
  **/
 char * skip_nonwhitespace(char *s) {
+    while(*s && *s!=' ')
     return s;
 }
 
@@ -114,6 +140,8 @@ char * skip_nonwhitespace(char *s) {
  * @return  Point to first non-whitespace character in s.
  **/
 char * skip_whitespace(char *s) {
+    while(*s && *s==' ')
+        s++;
     return s;
 }
 
