@@ -15,15 +15,20 @@
  **/
 int single_server(int sfd) {
     /* Accept and handle HTTP request */
+    if (sfd < 0) {
+        return EXIT_FAILURE;
+    }
     while (true) {
     	/* Accept request */
-
+        Request* client = accept_request(rfd); 
 	/* Handle request */
-
+        handle_request(client);
 	/* Free request */
+        free_request(client);
     }
 
     /* Close server socket */
+    close(sfd);
     return EXIT_SUCCESS;
 }
 
