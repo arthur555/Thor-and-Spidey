@@ -37,9 +37,19 @@ char * determine_mimetype(const char *path) {
     char *token;
     char buffer[BUFSIZ];
     FILE *fs = NULL;
+    
+    ext = strstr(path, ".")++;
+    fs = fopen(MimeTypePath);
+    if(!fs)
+    {
+        debug("Failed to open MimeTypePath: ", MimeTypePath);
+    }
+    while(fgets(buffer, BUFSIZ, fs)){
+
+    }
 
     /* Find file extension */
-
+    
     /* Open MimeTypesPath file */
 
     /* Scan file for matching file extensions */
