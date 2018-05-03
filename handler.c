@@ -31,11 +31,14 @@ HTTPStatus  handle_request(Request *r) {
     HTTPStatus result;
 
     /* Parse request */
+    parse_request(r);
 
     /* Determine request path */
+    strdup(r->path, determine_request_path(r->uri));
     debug("HTTP REQUEST PATH: %s", r->path);
 
     /* Dispatch to appropriate request handler type based on file type */
+
 
     log("HTTP REQUEST STATUS: %s", http_status_string(result));
     return result;
@@ -57,6 +60,7 @@ HTTPStatus  handle_browse_request(Request *r) {
     int n;
 
     /* Open a directory for reading or scanning */
+    
 
     /* Write HTTP Header with OK Status and text/html Content-Type */
 
