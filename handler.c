@@ -57,14 +57,40 @@ HTTPStatus  handle_request(Request *r) {
  **/
 HTTPStatus  handle_browse_request(Request *r) {
     struct dirent **entries;
+    DIR * dir;
     int n;
 
     /* Open a directory for reading or scanning */
-    
+    if((dir = opendir(r->fd)) == NULL)
+    {
+        log("Couldn't open directory: %s\n", strerror(errno));
+        return HTTP_STATUS_NOT_FOUND;
+    }
+
 
     /* Write HTTP Header with OK Status and text/html Content-Type */
+    Header curr = r->headers;
+
+    while(curr->next) curr = curr->next;
+    
+    // create header string to be copied
+
+
+    // create new header for list
+
 
     /* For each entry in directory, emit HTML list item */
+
+    // write unordered list start
+
+    // loop while entry exists
+    while((dirent = readdir(dir)) != NULL)
+    {
+        // create HTML List item using starter, 
+        // write string to socket
+    }
+
+    // write list end
 
     /* Flush socket, return OK */
     return HTTP_STATUS_OK;
@@ -116,7 +142,7 @@ fail:
  * HTTP_STATUS_INTERNAL_SERVER_ERROR.
  **/
 HTTPStatus handle_cgi_request(Request *r) {
-    FILE *pfs;
+    FILE *pfs = NULL;
     char buffer[BUFSIZ];
 
     /* Export CGI environment variables from request structure:
@@ -125,8 +151,17 @@ HTTPStatus handle_cgi_request(Request *r) {
     /* Export CGI environment variables from request headers */
 
     /* POpen CGI Script */
+    pfs = popen(r->path, "r");
+
+    if(pfs < 0)
+    {
+        log("Couldn't open cgi script: %s\n", strerror(errno));
+        return HTTP_STATUS_NOT_FOUND;
+    }
 
     /* Copy data from popen to socket */
+    fgets(buffer, BUFSIZ, pfs);
+    write(r->fd, buffer, BUFSIZ);
 
     /* Close popen, flush socket, return OK */
     return HTTP_STATUS_OK;
@@ -145,6 +180,10 @@ HTTPStatus  handle_error(Request *r, HTTPStatus status) {
     const char *status_string = http_status_string(status);
 
     /* Write HTTP Header */
+    char header_string [BUFSIZ] = {0};
+    strcat(header_string, "Warning: ");
+    // *****may have error due to improper conversion*****
+    strcat(header_string, itoa((int) status));
 
     /* Write HTML Description of Error*/
 
