@@ -61,38 +61,34 @@ HTTPStatus  handle_browse_request(Request *r) {
     int n;
 
     /* Open a directory for reading or scanning */
-    if((dir = opendir(r->fd)) == NULL)
+    if((dir = opendir(r->path)) == NULL)
     {
         log("Couldn't open directory: %s\n", strerror(errno));
         return HTTP_STATUS_NOT_FOUND;
     }
 
-
     /* Write HTTP Header with OK Status and text/html Content-Type */
-    Header curr = r->headers;
-
-    while(curr->next) curr = curr->next;
     
-    // create header string to be copied
-
-
-    // create new header for list
-
+    fprintf(r->file, "HTTP/1.1 200 OK\nContent-Type: text/html\n\n");
 
     /* For each entry in directory, emit HTML list item */
 
-    // write unordered list start
+    fprintf(r->file, "<ul>");
 
     // loop while entry exists
     while((dirent = readdir(dir)) != NULL)
     {
-        // create HTML List item using starter, 
-        // write string to socket
+        if(streq(dirent->d_name, ".") == 0 || streq(dirent->d_name, "..")) continue;
+
+        fprintf(r->file, "<li>");
+        fprintf(r->file, dirent->d_name);
+        fprintf(r->file, "</li>");
     }
 
-    // write list end
+    fprintf(r->file, "</ul>");
 
     /* Flush socket, return OK */
+    fflush(r->file);
     return HTTP_STATUS_OK;
 }
 
