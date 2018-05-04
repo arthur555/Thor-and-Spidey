@@ -39,14 +39,15 @@ int forking_server(int sfd) {
         } else if (pid==0) {
             debug("Handling client request");
             close(sfd);
-            if (handle_request(client) != 200) {
+            if (handle_request(client) != HTTP_STATUS_OK) {
                 //fclose(client_file);
+                handle_error(client,handle_request(client));
                 exit(EXIT_FAILURE);
-            } else {
+            } /*else {
                 //handle_request(client);
                 //fclose(client_file);
                 exit(EXIT_SUCCESS);
-            }
+            }*/
         } else {
             //fclose(client_file);
             free_request(client);
