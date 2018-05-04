@@ -22,8 +22,9 @@ int single_server(int sfd) {
     	/* Accept request */
         Request* client = accept_request(sfd); 
 	/* Handle request */
-        if (handle_request(client)!=200){
+        if (handle_request(client)!=HTTP_STATUS_OK){
             close(sfd);
+            handle_error(client,handle_request(client));
             return EXIT_FAILURE;
         }
         handle_request(client);
