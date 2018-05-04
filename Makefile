@@ -9,7 +9,7 @@ TARGETS=	spidey
 all:		$(TARGETS)
 
 spidey: 	forking.o handler.o request.o single.o socket.o spidey.o utils.o
-	$(LD) $(LDLAGS) -o $@ $^
+	$(LD) $(LDFLAGS) -o $@ $^
 
 
 %.o: 	%.c

@@ -1,13 +1,12 @@
 /* utils.c: spidey utilities */
-
 #include "spidey.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
-
+#include <linux/limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 
 /**
  * Determine mime-type from file extension.
@@ -38,24 +37,29 @@ char * determine_mimetype(const char *path) {
     char buffer[BUFSIZ];
     FILE *fs = NULL;
     
-    ext = strstr(path, ".")++;
-    fs = fopen(MimeTypePath);
+    ext = strstr(path, ".");
+    ext++;
+    fs = fopen(MimeTypesPath,"r");
     if(!fs)
     {
-        debug("Failed to open MimeTypePath: %s", MimeTypePath);
+        debug("Failed to open MimeTypePath: %s", MimeTypesPath);
     }
     while(fgets(buffer, BUFSIZ, fs)){
-        mimetype = strtok(buffer," ");
+        mimetype = strtok(buffer," \t\r\n\v");
         token = mimetype;
+       // printf("Mimetype1: %s\n", mimetype);
         while(token!= NULL){
-            token = strtok(NULL, s);
-            token = skip_nonwhitespace(token);
-            if (strteq(token, ext))
+            token = strtok(NULL, " \r\n");
+            token = skip_whitespace(token);
+         //   printf("Mimetype2:hh %s..", token);
+
+            if (token == NULL) continue;
+            if (streq(token, ext))
                 {
                     debug("Mimetype matched: %s", mimetype);
                     
                     char * mime = calloc(1, strlen(mimetype)+1);
-                    strcpy(mime, mimetype)
+                    strcpy(mime, mimetype);
                     return mime;
                 }
 
@@ -91,14 +95,34 @@ char * determine_mimetype(const char *path) {
  * string must later be free'd.
  **/
 char * determine_request_path(const char *uri) {
-    char[PATH_MAX] path;
+    char path[BUFSIZ];
     strcat(path, RootPath);
     strcat(path, uri);
-    char* pathh = realpath(uri, NULL);
-    if (!streq(path, pathh))
+    
+//    char pa[BUFSIZ];
+//    strcat(pa, RootPath);
+//    strcat(pa, uri);
+    char pat[PATH_MAX+1];
+
+    char* pathh = realpath(uri,pat );
+    if (pathh==NULL)
+    {
+        debug("realpath not found");
+        return NULL;
+    }
+    
+    char pa2[PATH_MAX+1];
+    char* pa3 = realpath(RootPath,pa2 );
+    
+    printf("%s\n", pathh);
+    printf("%s\n", pa3);
+    
+    if (strstr(pathh, pa3)!= pathh)
         return NULL;
 
-    return pathh;
+    char * mime = calloc(1, strlen(pathh)+1);
+    strcpy(mime, pathh);
+    return mime;
 }
 
 /**
@@ -129,7 +153,8 @@ const char * http_status_string(HTTPStatus status) {
  * @return  Point to first whitespace character in s.
  **/
 char * skip_nonwhitespace(char *s) {
-    while(*s && *s!=' ')
+    while( s!=NULL && ((*s)!=' '||(*s)!='\t'))
+        s++;
     return s;
 }
 
@@ -140,9 +165,20 @@ char * skip_nonwhitespace(char *s) {
  * @return  Point to first non-whitespace character in s.
  **/
 char * skip_whitespace(char *s) {
-    while(*s && *s==' ')
+    while( s !=NULL && ((*s)==' '|| (*s)=='\t'))
         s++;
     return s;
 }
 
+/*int main(int argc, char* argv[])
+{
+    char* a = "script.cgi";
+    char *z = determine_request_path(a) ;
+    if (z)
+        printf("%s",z);
+    else 
+        printf ("URI not found");
+    return 0;
+	
+}*/
 /* vim: set expandtab sts=4 sw=4 ts=8 ft=c: */
