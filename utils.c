@@ -95,34 +95,34 @@ char * determine_mimetype(const char *path) {
  * string must later be free'd.
  **/
 char * determine_request_path(const char *uri) {
-    char path[BUFSIZ];
-    strcat(path, RootPath);
-    strcat(path, uri);
     
 //    char pa[BUFSIZ];
 //    strcat(pa, RootPath);
 //    strcat(pa, uri);
-    char pat[PATH_MAX+1];
-
-    char* pathh = realpath(uri,pat );
-    if (pathh==NULL)
+    char* real_path = realpath(uri, NULL);
+    if (real_path==NULL)
     {
-        debug("realpath not found");
+        debug("real_path not found");
         return NULL;
     }
     
-    char pa2[PATH_MAX+1];
-    char* pa3 = realpath(RootPath,pa2 );
+    char* check_path = realpath(RootPath, NULL);
+    if (check_path==NULL)
+    {
+        debug("check_path not found");
+        free(real_path);
+        return NULL;
+    }
     
-    printf("%s\n", pathh);
-    printf("%s\n", pa3);
+    printf("%s\n", real_path);
+    printf("%s\n", check_path);
     
-    if (strstr(pathh, pa3)!= pathh)
+    if (strstr(real_path, check_path) != real_path)
         return NULL;
 
-    char * mime = calloc(1, strlen(pathh)+1);
-    strcpy(mime, pathh);
-    return mime;
+    free(check_path);
+
+    return real_path;
 }
 
 /**
