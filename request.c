@@ -100,12 +100,13 @@ void free_request(Request *r) {
     }
 
     /* Free allocated strings */
-    if(r->host != NULL)
+    if(strlen(r->host) > 0)
     {
+        printf(r->host);
         free(r->host);
     }
 
-    if(r->port != NULL)
+    if(strlen(r->port) > 0)
     {
         free(r->port);
     }

@@ -1,7 +1,7 @@
 /* spidey: Simple HTTP Server */
 
 #include "spidey.h"
-
+#include <linux/limits.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
@@ -56,12 +56,12 @@ bool parse_options(int argc, char *argv[], ServerMode *mode) {
                 break;
             case 'c':
                 argind++;
-                if (streq(argv[argind],"forking")!=0) {
-                    mode = FORKING;
-                } else if (streq(argv[argind],"single")!=0){
-                    mode = SINGLE;
+                if (strcmp(argv[argind],"forking")==0) {
+                    *mode = FORKING;
+                } else if (strcmp(argv[argind],"single")==0){
+                    *mode = SINGLE;
                 } else {
-                    mode = UNKNOWN;
+                    *mode = UNKNOWN;
                 }
                 break;
             case 'm':
@@ -74,7 +74,7 @@ bool parse_options(int argc, char *argv[], ServerMode *mode) {
                 break;
             case 'p':
                 argind++;
-                port = argv[argind];
+                Port = argv[argind];
                 break;
             case 'r':
                 argind++;
@@ -93,16 +93,18 @@ bool parse_options(int argc, char *argv[], ServerMode *mode) {
  **/
 int main(int argc, char *argv[]) {
     ServerMode mode;
-
+    int sfd = 0;
     /* Parse command line options */
-    if (parse_options(argc,argv,&mode)){
-        parse_options(argc,argv,&mode);
+    if (parse_options(argc,argv,&mode)==false){
+        return EXIT_FAILURE;
+    }
+    else {
+        //parse_options(argc,argv,&mode);
     /* Listen to server socket */
-        int sfd = socket_listen(port);
+        sfd = socket_listen(Port);
     /* Determine real RootPath */
         char buffer[PATH_MAX+1];
-        char* RealPath;
-        RealPath = realpath(RootPath,buffer);
+        RootPath = realpath(RootPath,buffer);
     }
 
     log("Listening on port %s", Port);
@@ -112,25 +114,25 @@ int main(int argc, char *argv[]) {
     debug("ConcurrencyMode = %s", mode == SINGLE ? "Single" : "Forking");
 
     /* Start either forking or single HTTP server */
-    sfd = socket_listen(Port);
+    //sfd = socket_listen(Port);
     if (mode==FORKING) {
         if (forking_server(sfd)!=0){
             return EXIT_FAILURE;
-        } else {
+        } /*else {
             forking_server(sfd);
-        }
+        }*/
     } else if (mode==SINGLE) {
-        if (single(sfd)!=0) {
+        if (single_server(sfd)!=0) {
             return EXIT_FAILURE;
-        } else {
+        } /*else {
             single(sfd);
-        }
+        }*/
     } else {
         if (forking_server(sfd)!=0) {
             return EXIT_FAILURE;
-        } else {
+        } /*else {
             forking_server(sfd);
-        }
+        }*/
     }
     return EXIT_SUCCESS;
 }
