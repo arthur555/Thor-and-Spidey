@@ -1,7 +1,7 @@
 /* spidey: Simple HTTP Server */
 
 #include "spidey.h"
-
+#include <linux/limits.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
@@ -57,11 +57,11 @@ bool parse_options(int argc, char *argv[], ServerMode *mode) {
             case 'c':
                 argind++;
                 if (strcmp(argv[argind],"forking")==0) {
-                    mode = FORKING;
+                    *mode = FORKING;
                 } else if (strcmp(argv[argind],"single")==0){
-                    mode = SINGLE;
+                    *mode = SINGLE;
                 } else {
-                    mode = UNKNOWN;
+                    *mode = UNKNOWN;
                 }
                 break;
             case 'm':
@@ -104,8 +104,7 @@ int main(int argc, char *argv[]) {
         sfd = socket_listen(Port);
     /* Determine real RootPath */
         char buffer[PATH_MAX+1];
-        char* RealPath;
-        RealPath = realpath(RootPath,buffer);
+        RootPath = realpath(RootPath,buffer);
     }
 
     log("Listening on port %s", Port);
@@ -123,7 +122,7 @@ int main(int argc, char *argv[]) {
             forking_server(sfd);
         }*/
     } else if (mode==SINGLE) {
-        if (single(sfd)!=0) {
+        if (single_server(sfd)!=0) {
             return EXIT_FAILURE;
         } /*else {
             single(sfd);

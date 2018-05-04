@@ -20,9 +20,9 @@ int single_server(int sfd) {
     }
     while (true) {
     	/* Accept request */
-        Request* client = accept_request(rfd); 
+        Request* client = accept_request(sfd); 
 	/* Handle request */
-        if (handle_request(client!=200)){
+        if (handle_request(client)!=200){
             close(sfd);
             return EXIT_FAILURE;
         }
