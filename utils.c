@@ -42,7 +42,7 @@ char * determine_mimetype(const char *path) {
     fs = fopen(MimeTypePath);
     if(!fs)
     {
-        debug("Failed to open MimeTypePath: ", MimeTypePath);
+        debug("Failed to open MimeTypePath: %s", MimeTypePath);
     }
     while(fgets(buffer, BUFSIZ, fs)){
         mimetype = strtok(buffer," ");
@@ -52,7 +52,7 @@ char * determine_mimetype(const char *path) {
             token = skip_nonwhitespace(token);
             if (strteq(token, ext))
                 {
-                    debug("Mimetype matched: ", mimetype);
+                    debug("Mimetype matched: %s", mimetype);
                     
                     char * mime = calloc(1, strlen(mimetype)+1);
                     strcpy(mime, mimetype)
@@ -62,7 +62,7 @@ char * determine_mimetype(const char *path) {
         }
     }
     fclose(fs);
-    debug ("Mimetype not found, using defualt mimetype: ", DefaultMimeType);
+    debug ("Mimetype not found, using defualt mimetype: %s", DefaultMimeType);
     char * mime = calloc(1, strlen(DefaultMimeType)+1);
     strcpy(mime, DefaultMimeType);
     /* Find file extension */

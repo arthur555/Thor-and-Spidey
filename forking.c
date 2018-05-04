@@ -43,7 +43,7 @@ int forking_server(int sfd) {
                 //fclose(client_file);
                 exit(EXIT_FAILURE);
             } else {
-                handle_request(client);
+                //handle_request(client);
                 //fclose(client_file);
                 exit(EXIT_SUCCESS);
             }
