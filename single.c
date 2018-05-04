@@ -22,6 +22,10 @@ int single_server(int sfd) {
     	/* Accept request */
         Request* client = accept_request(rfd); 
 	/* Handle request */
+        if (handle_request(client!=200)){
+            close(sfd);
+            return EXIT_FAILURE;
+        }
         handle_request(client);
 	/* Free request */
         free_request(client);
