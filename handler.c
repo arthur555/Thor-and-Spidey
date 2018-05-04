@@ -75,19 +75,19 @@ HTTPStatus  handle_browse_request(Request *r) {
 
     /* For each entry in directory, emit HTML list item */
 
-    fprintf(r->file, "<html>");
-    fprintf(r->file, "<ul>");
+    fprintf(r->file, "<html>\r\n");
+    fprintf(r->file, "<ul>\r\n");
 
     // loop while entry exists
     while((dirent = readdir(dir)) != NULL)
     {
         if(streq(dirent->d_name, ".") == 0 || streq(dirent->d_name, "..")) continue;
 
-        fprintf(r->file, "<li>%s</li>", dirent->d_name);
+        fprintf(r->file, "<li>\r\n%s\r\n</li>\r\n", dirent->d_name);
     }
 
-    fprintf(r->file, "</ul>");
-    fprintf(r->file, "</html>");
+    fprintf(r->file, "</ul>\r\n");
+    fprintf(r->file, "</html>\r\n");
 
     /* Flush socket, return OK */
     fflush(r->file);
@@ -109,8 +109,7 @@ HTTPStatus  handle_file_request(Request *r) {
     FILE *fs = NULL;
     char buffer[BUFSIZ] = {0};
     char *mimetype = NULL;
-    // Why do I need this???
-    //size_t nread = 0;
+    size_t nread = 0;
 
     /* Open file for reading */
     int rfd = open(r->path);
@@ -132,15 +131,15 @@ HTTPStatus  handle_file_request(Request *r) {
     /* Write HTTP Headers with OK status and determined Content-Type */
     fprintf(r->file, "HTML/1.1 200 OK\r\nContent-Type: %s\r\n\r\n", mimetype);
 
-    /* Read from file and write to socket in chunks */
-    fprintf(r->file, "<html>");
+    fprintf(r->file, "<html>\r\n");
 
-    while(fgets(buffer, BUFSIZ, fs))
+    /* Read from file and write to socket in chunks */
+    while((nread = fread(buffer, 8, 8, fs)) > 0)
     {
-        fputs(buffer, r->file);
+        fwrite(buffer, 8, 8, r->file);
     }
 
-    fprintf(r->file, "</html>");
+    fprintf(r->file, "</html>\r\n");
 
     /* Close file, flush socket, deallocate mimetype, return OK */
     fclose(fs);
@@ -179,26 +178,59 @@ HTTPStatus handle_cgi_request(Request *r) {
     /* Export CGI environment variables from request structure:
      * http://en.wikipedia.org/wiki/Common_Gateway_Interface */
     // DOCUMENT_ROOT
+    setenv("DOCUMENT_ROOT", RootPath, 1);
 
     // QUERY_STRING
+    setenv("QUERY_STRING", r->query, 1);
 
     // REMOTE_ADDR
+    setenv("REMOTE_ADDR", r->host, 1);
 
     // REMOTE_PORT
+    setenv("REMOTE_PORT", r->port, 1);
 
-    // SCRIPT_FILENAME
+    // REQUEST_METHOD
+    setenv("REQUEST_METHOD", r->method, 1);
 
-    // 
+    // REQUEST_URI
+    setenv("REQUEST_URI", r->uri, 1);
+
+    // SCRIPT_NAME
+    setenv("SCRIPT_NAME", r->path, 1);
+
+    // SERVER_PORT
+    setenv("SERVER_PORT", Port, 1);
 
     /* Export CGI environment variables from request headers */
-    for(Header * curr = r->headers, curr != NULL, curr = curr->next)
+    Header * curr = r->headers;
+
+    while(curr != NULL)
     {
-        // add header to environment
-        if(setenv(r->name, r->value, 1) < 0)
+        if(streq(curr->name, "Host") == 0)
         {
-            log("Couldn't export environmental variable: %s\n", strerror(errno));
-            return HTTP_STATUS_INTERNAL_SERVER_ERROR;
+            setenv("HTTP_HOST", curr->value, 1);
         }
+        else if(streq(curr->name, "Accept") == 0)
+        {
+            setenv("HTTP_ACCEPT", curr->value, 1);
+        }
+        else if(streq(curr->name, "Accept-Language") == 0)
+        {
+            setenv("HTTP_ACCEPT_LANGUAGE", curr->value, 1);
+        }
+        else if(streq(curr->name, "Accept-Encoding") == 0)
+        {
+            setenv("HTTP_ACCEPT_ENCODING", curr->value, 1);
+        }
+        else if(streq(curr->name, "Connection") == 0)
+        {
+            setenv("HTTP_CONNECTION", curr->value, 1);
+        }
+        else if(streq(curr->name, "User-Agent") == 0)
+        {
+            setenv("HTTP_USER_AGENT", curr->value, 1);
+        }
+        curr = curr->next;
     }
 
     /* POpen CGI Script */
@@ -229,6 +261,26 @@ HTTPStatus handle_cgi_request(Request *r) {
  **/
 HTTPStatus  handle_error(Request *r, HTTPStatus status) {
     const char *status_string = http_status_string(status);
+    int status_int = 0;
+
+    switch(HTTPStatus)
+    {
+        case HTTP_STATUS_OK:
+            status_int = 200;
+            break;
+        case HTTP_STATUS_BAD_REQUEST:
+            status_int = 400;
+            break;
+        case HTTP_STATUS_NOT_FOUND:
+            status_int = 404;
+            break;
+        case HTTP_STATUS_INTERNAL_SERVER_ERROR:
+            status_int = 500;
+            break;
+        default:
+            status_int = -1;
+            break;
+    }
 
     /* Write HTTP Header */
     char header_string [BUFSIZ] = {0};
