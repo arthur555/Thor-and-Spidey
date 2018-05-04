@@ -191,6 +191,15 @@ HTTPStatus handle_cgi_request(Request *r) {
     // 
 
     /* Export CGI environment variables from request headers */
+    for(Header * curr = r->headers, curr != NULL, curr = curr->next)
+    {
+        // add header to environment
+        if(setenv(r->name, r->value, 1) < 0)
+        {
+            log("Couldn't export environmental variable: %s\n", strerror(errno));
+            return HTTP_STATUS_INTERNAL_SERVER_ERROR;
+        }
+    }
 
     /* POpen CGI Script */
     pfs = popen(r->path, "r");
