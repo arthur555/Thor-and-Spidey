@@ -99,7 +99,7 @@ char * determine_request_path(const char *uri) {
 //    char pa[BUFSIZ];
 //    strcat(pa, RootPath);
 //    strcat(pa, uri);
-    char uri_buffer [BUFSIZ];
+    /*char uri_buffer [BUFSIZ];
     strcpy(uri_buffer, "www");
     strcat(uri_buffer, uri);
 
@@ -111,18 +111,21 @@ char * determine_request_path(const char *uri) {
         debug("real_path not found");
         return NULL;
     }
-    
+    */
+ 
     char check_path [BUFSIZ];
     strcpy(check_path, RootPath);
     strcat(check_path, uri);
 
-    log("Real path: %s", real_path);
+    /*log("Real path: %s", real_path);
     log("Check path: %s", check_path);
     
-    if (strstr(real_path, RootPath) != real_path)
+    */
+    if (strstr(check_path, RootPath) != check_path)
         return NULL;
 
-    return real_path;
+    
+    return strdup(check_path);
 }
 
 /**
@@ -153,9 +156,16 @@ const char * http_status_string(HTTPStatus status) {
  * @return  Point to first whitespace character in s.
  **/
 char * skip_nonwhitespace(char *s) {
-    while(s != NULL && strchr(WHITESPACE, *s))
+    while(s != NULL && *s != '\0' && !strchr(WHITESPACE, *s))
         s++;
-    return s;
+    if(s == NULL)
+    {
+        return NULL;
+    }
+    else
+    {
+        return (*s == '\0') ? NULL : s;
+    }
 }
 
 /**
@@ -165,9 +175,16 @@ char * skip_nonwhitespace(char *s) {
  * @return  Point to first non-whitespace character in s.
  **/
 char * skip_whitespace(char *s) {
-    while( s !=NULL && ((*s)==' '|| (*s)=='\t'))
+    while(s != NULL && *s != '\0' && strchr(WHITESPACE, *s))
         s++;
-    return s;
+    if(s == NULL)
+    {
+        return NULL;
+    }
+    else
+    {
+        return (*s == '\0') ? NULL : s;
+    }
 }
 
 /*int main(int argc, char* argv[])

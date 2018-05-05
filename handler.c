@@ -35,7 +35,7 @@ HTTPStatus  handle_request(Request *r) {
 
     /* Parse request */
     if (parse_request(r) < 0) {
-        return handle_error(r, HTTP_STATUS_INTERNAL_SERVER_ERROR);
+        return handle_error(r, HTTP_STATUS_BAD_REQUEST);
     }
 
     /* Determine request path */
@@ -99,19 +99,18 @@ HTTPStatus  handle_request(Request *r) {
  * with HTTP_STATUS_NOT_FOUND.
  **/
 HTTPStatus  handle_browse_request(Request *r) {
-    struct dirent *entries;
-    DIR * dir;
-    // What the heck is this used for????
-    //int n;
+    struct dirent **entries;
+    //DIR * dir;
+    int n;
 
     debug("Browsing directory");
 
     /* Open a directory for reading or scanning */
-    if((dir = opendir(r->path)) == NULL)
+    /*if((dir = opendir(r->path)) == NULL)
     {
         log("Couldn't open directory: %s", strerror(errno));
         return HTTP_STATUS_NOT_FOUND;
-    }
+    }*/
 
     /* Write HTTP Header with OK Status and text/html Content-Type */
     
@@ -119,8 +118,9 @@ HTTPStatus  handle_browse_request(Request *r) {
 
     /* For each entry in directory, emit HTML list item */
 
-    fprintf(r->file, "<html>\r\n");
-    fprintf(r->file, "<ul>\r\n");
+    fprintf(r->file, "<html>");
+    
+    fprintf(r->file, "<ul>\n");
 
     // loop while entry exists
     char link [BUFSIZ];
@@ -132,27 +132,31 @@ HTTPStatus  handle_browse_request(Request *r) {
         return HTTP_STATUS_INTERNAL_SERVER_ERROR;
     }
 
-    while((entries = readdir(dir)) != NULL)
-    {
-        if(streq(entries->d_name, ".")) continue;
-
-        // make link
-        strcpy(link, "http://");
-        strcat(link, host);
-        strcat(link, ":");
-        strcat(link, Port);
-        strcat(link, r->uri);
-        if(strlen(r->uri) > 1) strcat(link, "/");
-        strcat(link, entries->d_name);
-
-        log("Link: %s", link);
-        fprintf(r->file, "<li><a href=%s>%s</a></li>\r\n", link, entries->d_name);
+    n = scandir(r->path, &entries, NULL, alphasort);
+    if (n == -1) {
+        log("Couldn't scan dir: %s", strerror(errno));
+        return HTTP_STATUS_INTERNAL_SERVER_ERROR;
     }
 
-    fprintf(r->file, "</ul>\r\n");
-    fprintf(r->file, "</html>\r\n");
+    for (int i = 0; i < n; i++) {
+        if(streq(entries[i]->d_name, ".")) continue;
+        
+        // make entry string
+        strcpy(link, r->uri);
+        if(strlen(r->uri) > 1) strcat(link, "/");
+        strcat(link, entries[i]->d_name);
 
-    closedir(dir);
+        // make link
+
+        log("Link: %s", link);
+        fprintf(r->file, "<li><a href=\"%s\">%s</a></li>\n", link, entries[i]->d_name);
+        free(entries[i]);
+    } 
+
+    fprintf(r->file, "</ul>");
+    fprintf(r->file, "</html>");
+
+    //closedir(dir);
 
     /* Flush socket, return OK */
     fflush(r->file);
@@ -198,14 +202,13 @@ HTTPStatus  handle_file_request(Request *r) {
     log("Mimetype: %s", mimetype);
 
     /* Write HTTP Headers with OK status and determined Content-Type */
-    //fprintf(r->file, "HTML/1.0 200 OK\nContent-Type: %s\n\r\n", mimetype);
-    fprintf(r->file, "HTTP/1.0 200 OK\r\n");
-
-    /* Write HTML Description of Error*/
+    
+    fprintf(r->file, "HTTP/1.0 200 OK\n");
+    fprintf(r->file, "Content-Type: %s\n", mimetype);
     fprintf(r->file, "\r\n");
 
     /* Read from file and write to socket in chunks */
-    //fprintf(r->file, "<html></html>");
+    
     while((nread = fread(buffer, 1, 1, fs)) > 0)
     {
         fwrite(buffer, nread, 1, r->file);
@@ -251,7 +254,8 @@ HTTPStatus handle_cgi_request(Request *r) {
     setenv("DOCUMENT_ROOT", RootPath, 1);
 
     // QUERY_STRING
-    setenv("QUERY_STRING", r->query, 1);
+    if(r->query) setenv("QUERY_STRING", r->query, 1);
+    else        setenv("QUERY_STRING", "", 1);
 
     // REMOTE_ADDR
     setenv("REMOTE_ADDR", r->host, 1);
@@ -265,8 +269,8 @@ HTTPStatus handle_cgi_request(Request *r) {
     // REQUEST_URI
     setenv("REQUEST_URI", r->uri, 1);
 
-    // SCRIPT_NAME
-    setenv("SCRIPT_NAME", r->path, 1);
+    // SCRIPT_FILENAME
+    setenv("SCRIPT_FILENAME", r->path, 1);
 
     // SERVER_PORT
     setenv("SERVER_PORT", Port, 1);
@@ -274,29 +278,31 @@ HTTPStatus handle_cgi_request(Request *r) {
     /* Export CGI environment variables from request headers */
     Header * curr = r->headers;
 
+    debug("Exporting headers");
     while(curr != NULL)
     {
-        if(streq(curr->name, "Host") == 0)
+        debug("Exporting %s", curr->name);
+        if(streq(curr->name, "Host"))
         {
             setenv("HTTP_HOST", curr->value, 1);
         }
-        else if(streq(curr->name, "Accept") == 0)
+        else if(streq(curr->name, "Accept"))
         {
             setenv("HTTP_ACCEPT", curr->value, 1);
         }
-        else if(streq(curr->name, "Accept-Language") == 0)
+        else if(streq(curr->name, "Accept-Language"))
         {
             setenv("HTTP_ACCEPT_LANGUAGE", curr->value, 1);
         }
-        else if(streq(curr->name, "Accept-Encoding") == 0)
+        else if(streq(curr->name, "Accept-Encoding"))
         {
             setenv("HTTP_ACCEPT_ENCODING", curr->value, 1);
         }
-        else if(streq(curr->name, "Connection") == 0)
+        else if(streq(curr->name, "Connection"))
         {
             setenv("HTTP_CONNECTION", curr->value, 1);
         }
-        else if(streq(curr->name, "User-Agent") == 0)
+        else if(streq(curr->name, "User-Agent"))
         {
             setenv("HTTP_USER_AGENT", curr->value, 1);
         }
@@ -335,31 +341,12 @@ HTTPStatus  handle_error(Request *r, HTTPStatus status) {
     debug("Handling error");
 
     const char *status_string = http_status_string(status);
-    //int status_int = 0;
-
-
-    /*switch(status)
-    {
-        case HTTP_STATUS_OK:
-            status_int = 200;
-            break;
-        case HTTP_STATUS_BAD_REQUEST:
-            status_int = 400;
-            break;
-        case HTTP_STATUS_NOT_FOUND:
-            status_int = 404;
-            break;
-        case HTTP_STATUS_INTERNAL_SERVER_ERROR:
-            status_int = 500;
-            break;
-        default:
-            status_int = -1;
-            break;
-    }*/
+    log("ERROR STATUS STRING: %s", status_string);
 
     /* Write HTTP Header */
 
-    fprintf(r->file, "HTTP/1.0 %s\r\n", status_string);
+    fprintf(r->file, "HTTP/1.0 %s\n", status_string);
+    fprintf(r->file, "Content-Type: text/html\n");
 
     /* Write HTML Description of Error*/
     fprintf(r->file, "\r\n");

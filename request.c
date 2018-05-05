@@ -89,6 +89,26 @@ void free_request(Request *r) {
     	return;
     }
 
+    if(r->method != NULL)
+    {
+        free(r->method);
+    }
+    
+    if(r->path != NULL)
+    {
+        free(r->path);
+    }
+
+    if(r->uri != NULL)
+    {
+        free(r->uri);
+    }
+
+    if(r->query != NULL)
+    {
+        free(r->query);
+    }
+
     /* Close socket or fd */
     if(r->file != NULL)
     {
@@ -278,7 +298,7 @@ int parse_request_headers(Request *r) {
 
         // get value
         value = skip_nonwhitespace(name);
-        value = skip_whitespace(value);
+        if(value != NULL) value = skip_whitespace(value);
         if(value == NULL || strlen(value) == 0)
         {
             log("Couldn't find value");

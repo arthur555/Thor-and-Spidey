@@ -45,7 +45,7 @@ int forking_server(int sfd) {
             debug("Handling client request");
             handle_request(client);
             free_request(client);
-            exit(EXIT_SUCCESS);
+            return EXIT_SUCCESS;
                 //fclose(client_file);
                 //handle_error(client,handle_request(client));
              /*else {
