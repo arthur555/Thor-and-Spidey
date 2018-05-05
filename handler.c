@@ -7,7 +7,9 @@
 #include <string.h>
 
 #include <dirent.h>
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 /* Internal Declarations */
@@ -29,17 +31,54 @@ HTTPStatus handle_error(Request *request, HTTPStatus status);
  **/
 HTTPStatus  handle_request(Request *r) {
     HTTPStatus result;
+    struct stat st;
 
     /* Parse request */
     parse_request(r);
 
     /* Determine request path */
-    strdup(r->path, determine_request_path(r->uri));
+    if(determine_request_path(r->uri) == NULL)
+    {
+        fatal("Couldn't determine path of uri\n");
+        return handle_error(r, HTTP_STATUS_NOT_FOUND);
+    }
+
+    r->path = strdup(determine_request_path(r->uri));
     debug("HTTP REQUEST PATH: %s", r->path);
 
     /* Dispatch to appropriate request handler type based on file type */
     // TODO: get this stuff written, homeslice
+    if(stat(r->path, &st) < 0)
+    {
+        fatal("Stat didn't work: %s\n", strerror(errno));
+        return handle_error(r, HTTP_STATUS_NOT_FOUND);
+    }
 
+    // CGI or static
+    if(S_ISREG(st.st_mode))
+    {
+        // CGI
+        if(st.st_mode & S_IXUSR)
+        {
+            result = handle_cgi_request(r);
+        }
+        // reg file
+        else
+        {
+            result = handle_file_request(r);
+        }
+    }
+    // dir
+    else if(S_ISDIR(st.st_mode))
+    {
+        result = handle_browse_request(r);
+    }
+    // something else
+    else
+    {
+        fatal("Unknown file type O_O\n");
+        return handle_error(r, HTTP_STATUS_NOT_FOUND);
+    }
 
     log("HTTP REQUEST STATUS: %s", http_status_string(result));
     return result;
@@ -57,7 +96,7 @@ HTTPStatus  handle_request(Request *r) {
  * with HTTP_STATUS_NOT_FOUND.
  **/
 HTTPStatus  handle_browse_request(Request *r) {
-    struct dirent **entries;
+    struct dirent *entries;
     DIR * dir;
     // What the heck is this used for????
     //int n;
@@ -79,11 +118,11 @@ HTTPStatus  handle_browse_request(Request *r) {
     fprintf(r->file, "<ul>\r\n");
 
     // loop while entry exists
-    while((dirent = readdir(dir)) != NULL)
+    while((entries = readdir(dir)) != NULL)
     {
-        if(streq(dirent->d_name, ".") == 0 || streq(dirent->d_name, "..")) continue;
+        if(streq(entries->d_name, ".") == 0 || streq(entries->d_name, "..")) continue;
 
-        fprintf(r->file, "<li>\r\n%s\r\n</li>\r\n", dirent->d_name);
+        fprintf(r->file, "<li>\r\n%s\r\n</li>\r\n", entries->d_name);
     }
 
     fprintf(r->file, "</ul>\r\n");
@@ -112,19 +151,19 @@ HTTPStatus  handle_file_request(Request *r) {
     size_t nread = 0;
 
     /* Open file for reading */
-    int rfd = open(r->path);
+    int rfd = open(r->path, O_RDONLY);
     if (rfd < 0)
     {
         log("Error reading file: %s\n", strerror(errno));
         return HTTP_STATUS_NOT_FOUND;
     }
-    fs = fdopen(rfd);
+    fs = fdopen(rfd, "r");
 
     /* Determine mimetype */
     mimetype = determine_mimetype(r->path);
     if(mimetype == NULL)
     {
-        log("Cannot determine mimetype%s\n");
+        log("Cannot determine mimetype\n");
         goto fail;
     }
 
@@ -171,9 +210,6 @@ fail:
 HTTPStatus handle_cgi_request(Request *r) {
     FILE *pfs = NULL;
     char buffer[BUFSIZ] = {0};
-
-    char env_name[BUFSIZ] = {0};
-    char env_value[BUFSIZ] = {0};
 
     /* Export CGI environment variables from request structure:
      * http://en.wikipedia.org/wiki/Common_Gateway_Interface */
@@ -263,7 +299,7 @@ HTTPStatus  handle_error(Request *r, HTTPStatus status) {
     const char *status_string = http_status_string(status);
     int status_int = 0;
 
-    switch(HTTPStatus)
+    switch(status)
     {
         case HTTP_STATUS_OK:
             status_int = 200;
@@ -284,11 +320,14 @@ HTTPStatus  handle_error(Request *r, HTTPStatus status) {
 
     /* Write HTTP Header */
     char header_string [BUFSIZ] = {0};
-    strcat(header_string, "Warning: ");
-    // *****may have error due to improper conversion*****
-    strcat(header_string, itoa((int) status));
+    strcpy(header_string, "Warning");
+
+    fprintf(r->file, "%s: %d %s\r\n\r\n", header_string, status_int, status_string);
 
     /* Write HTML Description of Error*/
+    fprintf(r->file, "<html>\r\n");
+    fprintf(r->file, "<h>%d %s</h>", status_int, status_string);
+    fprintf(r->file, "</html>\r\n");
 
     /* Return specified status */
     return status;
