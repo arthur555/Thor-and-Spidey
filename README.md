@@ -4,19 +4,20 @@ Project - README
 Members
 -------
 
-- Domer McDomerson (dmcdomer@nd.edu)
+- Logan Yokum (lyokum@nd.edu)
 
 Demonstration
 -------------
 
-Link to Presentation.
+https://docs.google.com/presentation/d/1FCmiINX38Hws6R8kLgJhif5tlpsjffo-HjYdf1imUUA/edit?usp=sharing
 
 Errata
 ------
 
-Summary of things that don't work (quite right).
+Some memory leaks in single and forking modes (particularly in forking mode). It seems like the
+request structure is not being freed correctly.
 
 Contributions
 -------------
 
-Enumeration of the contributions of each group member.
+Logan Yokum (lyokum): bug testing and making tests pass, socket.c, requests.c, handler.c
