@@ -12,7 +12,7 @@
 char *Port	      = "9000";
 char *MimeTypesPath   = "/etc/mime.types";
 char *DefaultMimeType = "text/plain";
-char *RootPath	      = realpath("www", NULL);
+char *RootPath	      = "/afs/nd.edu/user40/lyokum/gitlab_projects/systems_programming/cse-20289-sp18-project/www";
 
 /**
  * Display usage message and exit with specified status code.

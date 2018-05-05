@@ -24,19 +24,15 @@ int single_server(int sfd) {
         if ((client = accept_request(sfd)) == NULL) {
             return -1;
         }
-        if (parse_request(client) < 0) {
-            free_request(client);
-            return EXIT_FAILURE;
-        }
         /* Handle request */
-        debug("Accept success!\n");
+        debug("Accept success!");
         if (handle_request(client)!=HTTP_STATUS_OK){
+            free_request(client);
             close(sfd);
             //handle_error(client,handle_request(client));
             return EXIT_FAILURE;
         }
         debug("Handle success!");
-        handle_request(client);
 	/* Free request */
         free_request(client);
     }

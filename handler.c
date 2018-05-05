@@ -34,7 +34,9 @@ HTTPStatus  handle_request(Request *r) {
     struct stat st;
 
     /* Parse request */
-    parse_request(r);
+    if (parse_request(r) < 0) {
+        return handle_error(r, HTTP_STATUS_INTERNAL_SERVER_ERROR);
+    }
 
     /* Determine request path */
     if(determine_request_path(r->uri) == NULL)

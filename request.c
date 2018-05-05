@@ -146,6 +146,7 @@ int parse_request(Request *r) {
         return -1;
     }
 
+    debug("Request parsed, homeslice");
     return 0;
 }
 
@@ -266,7 +267,8 @@ fail:
  *      headers.append(header)
  **/
 int parse_request_headers(Request *r) {
-    struct header *curr = NULL;
+    Header *curr = r->headers;
+    Header *temp = NULL;
     char buffer[BUFSIZ];
     char *name = buffer;
     char *value = NULL;
@@ -275,6 +277,13 @@ int parse_request_headers(Request *r) {
     debug("Parsing headers from socket");
     while(fgets(buffer, BUFSIZ, r->file) != NULL && strlen(buffer) > 0)
     {
+        if(strchr(WHITESPACE, buffer[0])) break;
+
+        name = buffer;
+        value = NULL;
+        temp = NULL;
+
+        debug("Parsing header");
         chomp(buffer);
         log("Header buffer: %s", buffer);
 
@@ -300,41 +309,44 @@ int parse_request_headers(Request *r) {
 
         log("Name: %s", name);
 
-        // skip space
-        debug("Skip space");
-        
-
         // create and allocate header
         debug("Allocate header");
-        if((curr = calloc(1, sizeof(Header))) == NULL)
+        if((temp = calloc(1, sizeof(Header))) == NULL)
         {
             fatal("Couldn't allocate memory: %s", strerror(errno));
             goto fail;
         }
+        
 
         debug("Allocate name");
-        curr->name = strdup(name);
+        temp->name = strdup(name);
 
         debug("Allocate value");
-        curr->value = strdup(value);
+        temp->value = strdup(value);
         
         // if list doesn't have root
-        debug("Set first header");
         if(r->headers == NULL)
         {
-            r->headers = curr;
+            debug("Set first header");
+            r->headers = temp;
+            curr = temp;
         }
-        
-        // move to next header
-        curr = curr->next;
-        
+        else{
+            debug("Set next header");
+            curr->next = temp;
+            debug("Move forward");
+            curr = curr->next;
+        }
     }
+
+    debug("Out of loop");
 
 #ifndef NDEBUG
     for (struct header *header = r->headers; header != NULL; header = header->next) {
     	debug("HTTP HEADER %s = %s", header->name, header->value);
     }
 #endif
+    debug("Finished setting headers");
     return 0;
 
 fail:
