@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 /* Global Variables */
-char *Port	      = "9898";
+char *Port	      = "9000";
 char *MimeTypesPath   = "/etc/mime.types";
 char *DefaultMimeType = "text/plain";
 char *RootPath	      = "/afs/nd.edu/user29/szhao4/final/www";
@@ -47,7 +47,8 @@ bool parse_options(int argc, char *argv[], ServerMode *mode) {
     char* progname = argv[0];
     int argind = 1;
     if (argc==1) {
-        usage(progname,0);
+        *mode = SINGLE;
+        return true;
     }
     while (argind < argc && argv[argind][0]=='-') {
         switch(argv[argind][1]){
@@ -93,7 +94,7 @@ bool parse_options(int argc, char *argv[], ServerMode *mode) {
  **/
 int main(int argc, char *argv[]) {
     ServerMode mode;
-    int sfd = 0;
+    int sfd = -1;
     /* Parse command line options */
     if (parse_options(argc,argv,&mode)==false){
         return EXIT_FAILURE;
@@ -102,6 +103,10 @@ int main(int argc, char *argv[]) {
         //parse_options(argc,argv,&mode);
     /* Listen to server socket */
         sfd = socket_listen(Port);
+        if (sfd == -1) {
+            debug("socket failure");
+            return 1;
+        }
     /* Determine real RootPath */
         char buffer[PATH_MAX+1];
         RootPath = realpath(RootPath,buffer);
@@ -128,7 +133,7 @@ int main(int argc, char *argv[]) {
             single(sfd);
         }*/
     } else {
-        if (forking_server(sfd)!=0) {
+        if (single_server(sfd)!=0) {
             return EXIT_FAILURE;
         } /*else {
             forking_server(sfd);
