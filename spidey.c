@@ -12,7 +12,7 @@
 char *Port	      = "9898";
 char *MimeTypesPath   = "/etc/mime.types";
 char *DefaultMimeType = "text/plain";
-char *RootPath	      = "www";
+char *RootPath	      = "/afs/nd.edu/user29/szhao4/final/www";
 
 /**
  * Display usage message and exit with specified status code.
