@@ -41,18 +41,19 @@ HTTPStatus  handle_request(Request *r) {
     /* Determine request path */
     if(determine_request_path(r->uri) == NULL)
     {
-        fatal("Couldn't determine path of uri\n");
+        log("Couldn't determine path of uri");
+
         return handle_error(r, HTTP_STATUS_NOT_FOUND);
     }
+
 
     r->path = strdup(determine_request_path(r->uri));
     debug("HTTP REQUEST PATH: %s", r->path);
 
     /* Dispatch to appropriate request handler type based on file type */
-    // TODO: get this stuff written, homeslice
     if(stat(r->path, &st) < 0)
     {
-        fatal("Stat didn't work: %s\n", strerror(errno));
+        log("Stat didn't work: %s", strerror(errno));
         return handle_error(r, HTTP_STATUS_NOT_FOUND);
     }
 
@@ -78,7 +79,7 @@ HTTPStatus  handle_request(Request *r) {
     // something else
     else
     {
-        fatal("Unknown file type O_O\n");
+        log("Unknown file type O_O");
         return handle_error(r, HTTP_STATUS_NOT_FOUND);
     }
 
@@ -103,16 +104,18 @@ HTTPStatus  handle_browse_request(Request *r) {
     // What the heck is this used for????
     //int n;
 
+    debug("Browsing directory");
+
     /* Open a directory for reading or scanning */
     if((dir = opendir(r->path)) == NULL)
     {
-        log("Couldn't open directory: %s\n", strerror(errno));
+        log("Couldn't open directory: %s", strerror(errno));
         return HTTP_STATUS_NOT_FOUND;
     }
 
     /* Write HTTP Header with OK Status and text/html Content-Type */
     
-    fprintf(r->file, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
+    fprintf(r->file, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n");
 
     /* For each entry in directory, emit HTML list item */
 
@@ -120,15 +123,36 @@ HTTPStatus  handle_browse_request(Request *r) {
     fprintf(r->file, "<ul>\r\n");
 
     // loop while entry exists
+    char link [BUFSIZ];
+    char host [BUFSIZ];
+
+    if(gethostname(host, BUFSIZ) < 0)
+    {
+        log("Couldn't resolve hostname: %s\n", strerror(errno));
+        return HTTP_STATUS_INTERNAL_SERVER_ERROR;
+    }
+
     while((entries = readdir(dir)) != NULL)
     {
-        if(streq(entries->d_name, ".") == 0 || streq(entries->d_name, "..")) continue;
+        if(streq(entries->d_name, ".")) continue;
 
-        fprintf(r->file, "<li>\r\n%s\r\n</li>\r\n", entries->d_name);
+        // make link
+        strcpy(link, "http://");
+        strcat(link, host);
+        strcat(link, ":");
+        strcat(link, Port);
+        strcat(link, r->uri);
+        strcat(link, "/");
+        strcat(link, entries->d_name);
+
+        log("Link: %s", link);
+        fprintf(r->file, "<li><a href=%s>%s</a></li>\r\n", link, entries->d_name);
     }
 
     fprintf(r->file, "</ul>\r\n");
     fprintf(r->file, "</html>\r\n");
+
+    closedir(dir);
 
     /* Flush socket, return OK */
     fflush(r->file);
@@ -150,13 +174,15 @@ HTTPStatus  handle_file_request(Request *r) {
     FILE *fs = NULL;
     char buffer[BUFSIZ] = {0};
     char *mimetype = NULL;
-    size_t nread = 0;
+    //size_t nread = 0;
+
+    debug("Making some file stuff happen");
 
     /* Open file for reading */
     int rfd = open(r->path, O_RDONLY);
     if (rfd < 0)
     {
-        log("Error reading file: %s\n", strerror(errno));
+        log("Error reading file: %s", strerror(errno));
         return HTTP_STATUS_NOT_FOUND;
     }
     fs = fdopen(rfd, "r");
@@ -165,22 +191,21 @@ HTTPStatus  handle_file_request(Request *r) {
     mimetype = determine_mimetype(r->path);
     if(mimetype == NULL)
     {
-        log("Cannot determine mimetype\n");
+        log("Cannot determine mimetype");
         goto fail;
     }
 
-    /* Write HTTP Headers with OK status and determined Content-Type */
-    fprintf(r->file, "HTML/1.1 200 OK\r\nContent-Type: %s\r\n\r\n", mimetype);
+    log("Mimetype: %s", mimetype);
 
-    fprintf(r->file, "<html>\r\n");
+    /* Write HTTP Headers with OK status and determined Content-Type */
+    fprintf(r->file, "HTML/1.0 200 OK\r\nContent-Type: %s\r\n\r\n", mimetype);
 
     /* Read from file and write to socket in chunks */
-    while((nread = fread(buffer, 8, 8, fs)) > 0)
+    while((fgets(buffer, BUFSIZ, fs)) != NULL)
     {
-        fwrite(buffer, 8, 8, r->file);
+        fputs(buffer, r->file);
+        fputs(buffer, stderr);
     }
-
-    fprintf(r->file, "</html>\r\n");
 
     /* Close file, flush socket, deallocate mimetype, return OK */
     fclose(fs);
@@ -212,6 +237,8 @@ fail:
 HTTPStatus handle_cgi_request(Request *r) {
     FILE *pfs = NULL;
     char buffer[BUFSIZ] = {0};
+
+    debug("Making some CGI happen");
 
     /* Export CGI environment variables from request structure:
      * http://en.wikipedia.org/wiki/Common_Gateway_Interface */
@@ -298,10 +325,13 @@ HTTPStatus handle_cgi_request(Request *r) {
  * notify the user of the error.
  **/
 HTTPStatus  handle_error(Request *r, HTTPStatus status) {
-    const char *status_string = http_status_string(status);
-    int status_int = 0;
+    debug("Handling error");
 
-    switch(status)
+    const char *status_string = http_status_string(status);
+    //int status_int = 0;
+
+
+    /*switch(status)
     {
         case HTTP_STATUS_OK:
             status_int = 200;
@@ -318,20 +348,20 @@ HTTPStatus  handle_error(Request *r, HTTPStatus status) {
         default:
             status_int = -1;
             break;
-    }
+    }*/
 
     /* Write HTTP Header */
-    char header_string [BUFSIZ] = {0};
-    strcpy(header_string, "Warning");
 
-    fprintf(r->file, "%s: %d %s\r\n\r\n", header_string, status_int, status_string);
+    fprintf(r->file, "HTTP/1.0 %s\r\n", status_string);
 
     /* Write HTML Description of Error*/
+    fprintf(r->file, "\r\n");
     fprintf(r->file, "<html>\r\n");
-    fprintf(r->file, "<h>%d %s</h>", status_int, status_string);
+    fprintf(r->file, "<h>%s</h>\r\n", status_string);
     fprintf(r->file, "</html>\r\n");
 
     /* Return specified status */
+    fflush(r->file);
     return status;
 }
 

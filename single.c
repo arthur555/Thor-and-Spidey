@@ -22,17 +22,15 @@ int single_server(int sfd) {
     	/* Accept request */
         Request* client = NULL;
         if ((client = accept_request(sfd)) == NULL) {
-            return -1;
-        }
-        /* Handle request */
-        debug("Accept success!");
-        if (handle_request(client)!=HTTP_STATUS_OK){
-            free_request(client);
-            close(sfd);
-            //handle_error(client,handle_request(client));
+            log("Accept_request failed!");
             return EXIT_FAILURE;
         }
+
+        /* Handle request */
+        debug("Accept success!");
+        handle_request(client);
         debug("Handle success!");
+
 	/* Free request */
         free_request(client);
     }

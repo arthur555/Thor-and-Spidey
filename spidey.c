@@ -46,8 +46,8 @@ void usage(const char *progname, int status) {
 bool parse_options(int argc, char *argv[], ServerMode *mode) {
     char* progname = argv[0];
     int argind = 1;
+    *mode = SINGLE;
     if (argc==1) {
-        *mode = SINGLE;
         return true;
     }
     while (argind < argc && argv[argind][0]=='-') {

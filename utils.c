@@ -67,15 +67,15 @@ char * determine_mimetype(const char *path) {
     }
     fclose(fs);
     debug ("Mimetype not found, using defualt mimetype: %s", DefaultMimeType);
-    char * mime2 = calloc(1, strlen(DefaultMimeType)+1);
-    strcpy(mime2, DefaultMimeType);
+    char * mime = calloc(1, strlen(DefaultMimeType)+1);
+    strcpy(mime, DefaultMimeType);
     /* Find file extension */
     
     /* Open MimeTypesPath file */
 
     /* Scan file for matching file extensions */
 
-    return mime2;
+    return mime;
 }
 
 /**
@@ -99,7 +99,13 @@ char * determine_request_path(const char *uri) {
 //    char pa[BUFSIZ];
 //    strcat(pa, RootPath);
 //    strcat(pa, uri);
-    char* real_path = realpath(uri, NULL);
+    char uri_buffer [BUFSIZ];
+    strcpy(uri_buffer, "www");
+    strcat(uri_buffer, uri);
+
+    debug("Uri_buffer: %s", uri_buffer);
+
+    char* real_path = realpath(uri_buffer, NULL);
     if (real_path==NULL)
     {
         debug("real_path not found");
@@ -113,7 +119,7 @@ char * determine_request_path(const char *uri) {
     log("Real path: %s", real_path);
     log("Check path: %s", check_path);
     
-    if (!streq(real_path, check_path))
+    if (strstr(real_path, RootPath) != real_path)
         return NULL;
 
     return real_path;

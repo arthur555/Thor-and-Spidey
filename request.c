@@ -35,7 +35,7 @@ Request * accept_request(int sfd) {
     /* Allocate request struct (zeroed) */
     if((r = calloc(1, sizeof(Request))) == NULL)
     {
-        fatal("Couldn't allocate memory: %s", strerror(errno));
+        log("Couldn't allocate memory: %s", strerror(errno));
         goto fail;
     }
 
@@ -43,14 +43,14 @@ Request * accept_request(int sfd) {
     r->fd = accept(sfd, &raddr, &rlen);
     if(r->fd < 0)
     {
-        fatal("accept failed: %s", strerror(errno));
+        log("accept failed: %s", strerror(errno));
         goto fail;
     }
 
     /* Lookup client information */
     if((getnameinfo(&raddr, rlen, r->host, NI_MAXHOST, r->port, NI_MAXHOST, 0)) < 0)
     {
-        fatal("Failed to get client info: %s", strerror(errno));
+        log("Failed to get client info: %s", strerror(errno));
         goto fail;
     }
 
@@ -58,7 +58,7 @@ Request * accept_request(int sfd) {
     r->file = fdopen(r->fd, "w+");
     if(!r->file)
     {
-        fatal("Couldn't open stream: %s", strerror(errno));
+        log("Couldn't open stream: %s", strerror(errno));
         goto fail;
     }
 
@@ -97,17 +97,6 @@ void free_request(Request *r) {
     else if(r->fd > 0)
     {
         close(r->fd);
-    }
-
-    /* Free allocated strings */
-    if(strlen(r->host) > 0)
-    {
-        free(r->host);
-    }
-
-    if(strlen(r->port) > 0)
-    {
-        free(r->port);
     }
 
     /* Free headers */
@@ -175,9 +164,9 @@ int parse_request_method(Request *r) {
 
     /* Read line from socket */
     debug("Reading line from socket");
-    if((fgets(buffer, BUFSIZ, r->file)) == NULL || strlen(buffer) == 0)
+    if((fgets(buffer, BUFSIZ, r->file)) == NULL || streq(buffer, "\r\n"))
     {
-        fatal("No more requests to read");
+        log("No more requests to read");
         goto fail;
     }
 
@@ -190,7 +179,7 @@ int parse_request_method(Request *r) {
     method = strtok(buffer, " ");
     if(method == NULL || strlen(method) == 0)
     {
-        fatal("Cannot find method");
+        log("Cannot find method");
         goto fail;
     }
 
@@ -199,7 +188,7 @@ int parse_request_method(Request *r) {
     uri = strtok(NULL, " ");
     if(uri == NULL || strlen(uri) == 0 || uri[0] != '/')
     {
-        fatal("Cannot find uri");
+        log("Cannot find uri");
         goto fail;
     }
 
@@ -277,7 +266,7 @@ int parse_request_headers(Request *r) {
     debug("Parsing headers from socket");
     while(fgets(buffer, BUFSIZ, r->file) != NULL && strlen(buffer) > 0)
     {
-        if(strchr(WHITESPACE, buffer[0])) break;
+        if(streq(buffer, "\r\n")) break;
 
         name = buffer;
         value = NULL;
@@ -292,7 +281,7 @@ int parse_request_headers(Request *r) {
         value = skip_whitespace(value);
         if(value == NULL || strlen(value) == 0)
         {
-            fatal("Couldn't find value");
+            log("Couldn't find value");
             goto fail;
         }
 
@@ -303,7 +292,7 @@ int parse_request_headers(Request *r) {
         name = strtok(buffer, ":");
         if(name == NULL || strlen(name) == 0)
         {
-            fatal("Couldn't find name");
+            log("Couldn't find name");
             goto fail;
         }
 
@@ -313,7 +302,7 @@ int parse_request_headers(Request *r) {
         debug("Allocate header");
         if((temp = calloc(1, sizeof(Header))) == NULL)
         {
-            fatal("Couldn't allocate memory: %s", strerror(errno));
+            log("Couldn't allocate memory: %s", strerror(errno));
             goto fail;
         }
         
