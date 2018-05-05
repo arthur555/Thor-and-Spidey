@@ -153,7 +153,7 @@ const char * http_status_string(HTTPStatus status) {
  * @return  Point to first whitespace character in s.
  **/
 char * skip_nonwhitespace(char *s) {
-    while( s!=NULL && ((*s)!=' '||(*s)!='\t'))
+    while(s != NULL && strchr(WHITESPACE, *s))
         s++;
     return s;
 }

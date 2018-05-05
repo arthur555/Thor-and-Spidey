@@ -266,13 +266,27 @@ fail:
 int parse_request_headers(Request *r) {
     struct header *curr = NULL;
     char buffer[BUFSIZ];
-    char *name;
-    char *value;
+    char *name = buffer;
+    char *value = NULL;
 
     /* Parse headers from socket */
     debug("Parsing headers from socket");
     while(fgets(buffer, BUFSIZ, r->file) != NULL && strlen(buffer) > 0)
     {
+        log("Header buffer: %s\n", buffer);
+
+        // get value
+        value = skip_nonwhitespace(name);
+        value = skip_whitespace(value);
+        if(value == NULL || strlen(value) == 0)
+        {
+            fatal("Couldn't find value\n");
+            goto fail;
+        }
+
+        log("Value: %s", value);
+
+        // get name
         debug("Get name");
         name = strtok(buffer, ":");
         if(name == NULL || strlen(name) == 0)
@@ -285,15 +299,7 @@ int parse_request_headers(Request *r) {
 
         // skip space
         debug("Skip space");
-        strtok(NULL, " ");
-        value = strtok(NULL, "\n");
-        if(value == NULL || strlen(value) == 0)
-        {
-            fatal("Couldn't find value\n");
-            goto fail;
-        }
-
-        log("Value: %s", value);
+        
 
         // create and allocate header
         debug("Allocate header");
