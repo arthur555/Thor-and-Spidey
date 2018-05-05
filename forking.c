@@ -24,7 +24,15 @@ int forking_server(int sfd) {
     }
     while (true) {
     	/* Accept request */
-        Request* client = accept_request(sfd);
+         Request* client = NULL;
+         if ((client = accept_request(sfd)) == NULL) {
+             return -1;                       
+         }
+         if (parse_request(client) < 0) {
+             free_request(client);
+             return EXIT_FAILURE;
+                                             
+         }
         //FILE* client_file = client->file;
         /*if (!client_file) {
             continue;
