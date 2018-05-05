@@ -67,15 +67,15 @@ char * determine_mimetype(const char *path) {
     }
     fclose(fs);
     debug ("Mimetype not found, using defualt mimetype: %s", DefaultMimeType);
-    char * mime = calloc(1, strlen(DefaultMimeType)+1);
-    strcpy(mime, DefaultMimeType);
+    char * mime2 = calloc(1, strlen(DefaultMimeType)+1);
+    strcpy(mime2, DefaultMimeType);
     /* Find file extension */
     
     /* Open MimeTypesPath file */
 
     /* Scan file for matching file extensions */
 
-    return NULL;
+    return mime2;
 }
 
 /**
