@@ -12,7 +12,7 @@
 char *Port	      = "9000";
 char *MimeTypesPath   = "/etc/mime.types";
 char *DefaultMimeType = "text/plain";
-char *RootPath	      = "/afs/nd.edu/user29/szhao4/final/www";
+char *RootPath	      = realpath("www", NULL);
 
 /**
  * Display usage message and exit with specified status code.
@@ -139,6 +139,8 @@ int main(int argc, char *argv[]) {
             forking_server(sfd);
         }*/
     }
+
+    free(RootPath);
     return EXIT_SUCCESS;
 }
 

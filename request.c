@@ -35,7 +35,7 @@ Request * accept_request(int sfd) {
     /* Allocate request struct (zeroed) */
     if((r = calloc(1, sizeof(Request))) == NULL)
     {
-        fatal("Couldn't allocate memory: %s\n", strerror(errno));
+        fatal("Couldn't allocate memory: %s", strerror(errno));
         goto fail;
     }
 
@@ -43,14 +43,14 @@ Request * accept_request(int sfd) {
     r->fd = accept(sfd, &raddr, &rlen);
     if(r->fd < 0)
     {
-        fatal("accept failed: %s\n", strerror(errno));
+        fatal("accept failed: %s", strerror(errno));
         goto fail;
     }
 
     /* Lookup client information */
     if((getnameinfo(&raddr, rlen, r->host, NI_MAXHOST, r->port, NI_MAXHOST, 0)) < 0)
     {
-        fatal("Failed to get client info: %s\n", strerror(errno));
+        fatal("Failed to get client info: %s", strerror(errno));
         goto fail;
     }
 
@@ -58,7 +58,7 @@ Request * accept_request(int sfd) {
     r->file = fdopen(r->fd, "w+");
     if(!r->file)
     {
-        fatal("Couldn't open stream: %s\n", strerror(errno));
+        fatal("Couldn't open stream: %s", strerror(errno));
         goto fail;
     }
 
@@ -176,9 +176,11 @@ int parse_request_method(Request *r) {
     debug("Reading line from socket");
     if((fgets(buffer, BUFSIZ, r->file)) == NULL || strlen(buffer) == 0)
     {
-        fatal("No more requests to read: \n");
+        fatal("No more requests to read");
         goto fail;
     }
+
+    chomp(buffer);
 
     debug("Buffer: %s", buffer);
 
@@ -187,43 +189,43 @@ int parse_request_method(Request *r) {
     method = strtok(buffer, " ");
     if(method == NULL || strlen(method) == 0)
     {
-        fatal("Cannot find method\n");
+        fatal("Cannot find method");
         goto fail;
     }
 
-    log("Method: %s\n", method);
+    log("Method: %s", method);
 
     uri = strtok(NULL, " ");
     if(uri == NULL || strlen(uri) == 0 || uri[0] != '/')
     {
-        fatal("Cannot find uri\n");
+        fatal("Cannot find uri");
         goto fail;
     }
 
-    log("Uri: %s\n", uri);
+    log("Uri: %s", uri);
 
     /* Parse query from uri */
     debug("Parsing query from uri");
     uri = strtok(uri, "?");
     query = strtok(NULL, " ");
 
-    log("Uri: %s\n", uri);
-    log("Query: %s\n", query);
+    log("Uri: %s", uri);
+    log("Query: %s", query);
 
     /* Record method, uri, and query in request struct */
     debug("Recording method");
     r->method = strdup(method);
-    log("Method: %s\n", r->method);
+    log("Method: %s", r->method);
 
     debug("Recording uri");
     r->uri = strdup(uri);
-    log("Uri: %s\n", r->uri);
+    log("Uri: %s", r->uri);
 
     debug("Recording query");
     if(query) r->query = strdup(query);
     else r->query = NULL;
 
-    log("Query: %s\n", r->query);
+    log("Query: %s", r->query);
 
     debug("HTTP METHOD: %s", r->method);
     debug("HTTP URI:    %s", r->uri);
@@ -273,14 +275,15 @@ int parse_request_headers(Request *r) {
     debug("Parsing headers from socket");
     while(fgets(buffer, BUFSIZ, r->file) != NULL && strlen(buffer) > 0)
     {
-        log("Header buffer: %s\n", buffer);
+        chomp(buffer);
+        log("Header buffer: %s", buffer);
 
         // get value
         value = skip_nonwhitespace(name);
         value = skip_whitespace(value);
         if(value == NULL || strlen(value) == 0)
         {
-            fatal("Couldn't find value\n");
+            fatal("Couldn't find value");
             goto fail;
         }
 
@@ -291,7 +294,7 @@ int parse_request_headers(Request *r) {
         name = strtok(buffer, ":");
         if(name == NULL || strlen(name) == 0)
         {
-            fatal("Couldn't find name\n");
+            fatal("Couldn't find name");
             goto fail;
         }
 
@@ -305,7 +308,7 @@ int parse_request_headers(Request *r) {
         debug("Allocate header");
         if((curr = calloc(1, sizeof(Header))) == NULL)
         {
-            fatal("Couldn't allocate memory: %s\n", strerror(errno));
+            fatal("Couldn't allocate memory: %s", strerror(errno));
             goto fail;
         }
 
