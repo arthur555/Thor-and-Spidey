@@ -188,7 +188,7 @@ HTTPStatus  handle_file_request(Request *r) {
     fs = fdopen(rfd, "r");
 
     /* Determine mimetype */
-    mimetype = determine_mimetype(r->path);
+    mimetype = determine_mimetype(r->uri);
     if(mimetype == NULL)
     {
         log("Cannot determine mimetype");
@@ -198,7 +198,8 @@ HTTPStatus  handle_file_request(Request *r) {
     log("Mimetype: %s", mimetype);
 
     /* Write HTTP Headers with OK status and determined Content-Type */
-    fprintf(r->file, "HTML/1.0 200 OK\r\nContent-Type: %s\r\n\r\n", mimetype);
+    fprintf(r->file, "HTML/1.1 200 OK\nContent-Type: %s\n\r\n", mimetype);
+    fprintf(stderr, "HTML/1.1 200 OK\nContent-Type: %s\n\r\n", mimetype);
 
     /* Read from file and write to socket in chunks */
     while((fgets(buffer, BUFSIZ, fs)) != NULL)
