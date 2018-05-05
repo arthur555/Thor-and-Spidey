@@ -20,8 +20,15 @@ int single_server(int sfd) {
     }
     while (true) {
     	/* Accept request */
-        Request* client = accept_request(sfd); 
-	/* Handle request */
+        Request* client = NULL;
+        if ((client = accept_request(sfd)) == NULL) {
+            return -1;
+        }
+        if (parse_request(client) < 0) {
+            free_request(client);
+            return EXIT_FAILURE;
+        }
+        /* Handle request */
         debug("Accept success!\n");
         if (handle_request(client)!=HTTP_STATUS_OK){
             close(sfd);
