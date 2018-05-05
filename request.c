@@ -35,7 +35,7 @@ Request * accept_request(int sfd) {
     /* Allocate request struct (zeroed) */
     if((r = calloc(1, sizeof(Request))) == NULL)
     {
-        log("Couldn't allocate memory: %s\n", strerror(errno));
+        fatal("Couldn't allocate memory: %s\n", strerror(errno));
         goto fail;
     }
 
@@ -43,14 +43,14 @@ Request * accept_request(int sfd) {
     r->fd = accept(sfd, &raddr, &rlen);
     if(r->fd < 0)
     {
-        log("accept failed: %s\n", strerror(errno));
+        fatal("accept failed: %s\n", strerror(errno));
         goto fail;
     }
 
     /* Lookup client information */
     if((getnameinfo(&raddr, rlen, r->host, NI_MAXHOST, r->port, NI_MAXHOST, 0)) < 0)
     {
-        log("Failed to get client info: %s\n", strerror(errno));
+        fatal("Failed to get client info: %s\n", strerror(errno));
         goto fail;
     }
 
@@ -58,7 +58,7 @@ Request * accept_request(int sfd) {
     r->file = fdopen(r->fd, "w+");
     if(!r->file)
     {
-        log("Couldn't open stream: %s\n", strerror(errno));
+        fatal("Couldn't open stream: %s\n", strerror(errno));
         goto fail;
     }
 
@@ -102,7 +102,6 @@ void free_request(Request *r) {
     /* Free allocated strings */
     if(strlen(r->host) > 0)
     {
-        printf(r->host);
         free(r->host);
     }
 
@@ -134,12 +133,14 @@ void free_request(Request *r) {
  **/
 int parse_request(Request *r) {
     /* Parse HTTP Request Method */
+    debug("Parse HTTP request method");
     if(parse_request_method(r) < 0)
     {
         return -1;
     }
 
     /* Parse HTTP Request Headers*/
+    debug("Parse HTTP request headers");
     if(parse_request_headers(r) < 0)
     {
         return -1;
@@ -172,65 +173,63 @@ int parse_request_method(Request *r) {
     char *query;
 
     /* Read line from socket */
+    debug("Reading line from socket");
     if((fgets(buffer, BUFSIZ, r->file)) == NULL || strlen(buffer) == 0)
     {
-        log("No more requests to read: \n");
+        fatal("No more requests to read: \n");
         goto fail;
     }
 
+    debug("Buffer: %s", buffer);
+
     /* Parse method and uri */
-    method = strtok(buffer, WHITESPACE);
+    debug("Parsing method and uri");
+    method = strtok(buffer, " ");
     if(method == NULL || strlen(method) == 0)
     {
-        log("Cannot find method\n");
+        fatal("Cannot find method\n");
         goto fail;
     }
+
+    log("Method: %s\n", method);
 
     uri = strtok(NULL, " ");
     if(uri == NULL || strlen(uri) == 0 || uri[0] != '/')
     {
-        log("Cannot find uri\n");
+        fatal("Cannot find uri\n");
         goto fail;
     }
 
+    log("Uri: %s\n", uri);
+
     /* Parse query from uri */
+    debug("Parsing query from uri");
     uri = strtok(uri, "?");
     query = strtok(NULL, " ");
 
+    log("Uri: %s\n", uri);
+    log("Query: %s\n", query);
+
     /* Record method, uri, and query in request struct */
-    if((r->method = calloc(1, strlen(method) + 1)) == NULL)
-    {
-        log("Unable to allocate memory: %s\n", strerror(errno));
-        goto fail;
-    }
-    else
-    {
-        strcpy(r->method, method);
-    }
+    debug("Recording method");
+    r->method = strdup(method);
+    log("Method: %s\n", r->method);
 
-    if((r->uri = calloc(1, strlen(uri) + 1)) == NULL)
-    {
-        log("Unable to allocate memory: %s\n", strerror(errno));
-        goto fail;
-    }
-    else
-    {
-        strcpy(r->uri, uri);
-    }
+    debug("Recording uri");
+    r->uri = strdup(uri);
+    log("Uri: %s\n", r->uri);
 
-    if(query != NULL || (r->query = calloc(1, strlen(query) + 1)) == NULL)
-    {
-        log("Unable to allocate memory: %s\n", strerror(errno));
-        goto fail;
-    }
-    else
-    {
-        strcpy(r->query, query);
-    }
+    debug("Recording query");
+    if(query) r->query = strdup(query);
+    else r->query = NULL;
+
+    log("Query: %s\n", r->query);
+
     debug("HTTP METHOD: %s", r->method);
     debug("HTTP URI:    %s", r->uri);
     debug("HTTP QUERY:  %s", r->query);
 
+    debug("Finished processing method");
     return 0;
 
 fail:
@@ -271,52 +270,47 @@ int parse_request_headers(Request *r) {
     char *value;
 
     /* Parse headers from socket */
+    debug("Parsing headers from socket");
     while(fgets(buffer, BUFSIZ, r->file) != NULL && strlen(buffer) > 0)
     {
+        debug("Get name");
         name = strtok(buffer, ":");
         if(name == NULL || strlen(name) == 0)
         {
-            log("Couldn't find name\n");
+            fatal("Couldn't find name\n");
             goto fail;
         }
+
+        log("Name: %s", name);
 
         // skip space
+        debug("Skip space");
         strtok(NULL, " ");
-        value = strtok(NULL, "");
+        value = strtok(NULL, "\n");
         if(value == NULL || strlen(value) == 0)
         {
-            log("Couldn't find value\n");
+            fatal("Couldn't find value\n");
             goto fail;
         }
+
+        log("Value: %s", value);
 
         // create and allocate header
+        debug("Allocate header");
         if((curr = calloc(1, sizeof(Header))) == NULL)
         {
-            log("Couldn't allocate memory: %s\n", strerror(errno));
+            fatal("Couldn't allocate memory: %s\n", strerror(errno));
             goto fail;
         }
 
-        if((curr->name = calloc(1, sizeof(strlen(name) + 1))) == NULL)
-        {
-            log("Couldn't allocate memory: %s\n", strerror(errno));
-            goto fail;
-        }
-        else
-        {
-            strcpy(curr->name, name);
-        }
+        debug("Allocate name");
+        curr->name = strdup(name);
 
-        if((curr->value = calloc(1, sizeof(strlen(value) + 1))) == NULL)
-        {
-            log("Couldn't allocate memory: %s\n", strerror(errno));
-            goto fail;
-        }
-        else
-        {
-            strcpy(curr->value, value);
-        }
+        debug("Allocate value");
+        curr->value = strdup(value);
         
         // if list doesn't have root
+        debug("Set first header");
         if(r->headers == NULL)
         {
             r->headers = curr;
