@@ -106,21 +106,15 @@ char * determine_request_path(const char *uri) {
         return NULL;
     }
     
-    char* check_path = realpath(RootPath, NULL);
-    if (check_path==NULL)
-    {
-        debug("check_path not found");
-        free(real_path);
-        return NULL;
-    }
-    
-    printf("%s\n", real_path);
-    printf("%s\n", check_path);
-    
-    if (strstr(real_path, check_path) != real_path)
-        return NULL;
+    char check_path [BUFSIZ];
+    strcpy(check_path, RootPath);
+    strcat(check_path, uri);
 
-    free(check_path);
+    log("Real path: %s", real_path);
+    log("Check path: %s", check_path);
+    
+    if (!streq(real_path, check_path))
+        return NULL;
 
     return real_path;
 }
