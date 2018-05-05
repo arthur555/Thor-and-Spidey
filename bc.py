@@ -7,9 +7,10 @@ import subprocess
 # Variables
 
 
-nitems = ["/html/big.txt","/html/index.html", "/scripts/cowsay.sh", "/scripts/env.sh", "/text/hackers.txt", "/text/lyrics.txt" ]
+#nitems = ["/html/1k.txt","/html/1M.txt","/html/1G.txt","/html/index.html", "/scripts/cowsay.sh", "/scripts/env.sh", "/text/hackers.txt", "/text/lyrics.txt" ]
+nitems = ["/html/index.html", "/scripts/cowsay.sh", "/scripts/env.sh", "/text/hackers.txt", "/text/lyrics.txt" ]
 processes = [1,2,3,4]
-requests = [2,3,4]
+requests = [2,3]
 # Heading
 print("| {:7}| {:7}| {:21}| {:11}| {:14}|".format("process","request","uri", "latency","throughput"))
 print("|{:-<8}|{:-<8}|{:-<22}|{:-<12}|{:-<15}|".format("-","-","-", "-", "-"))
@@ -26,7 +27,7 @@ for nitem in nitems:
 			interval = max_run_time / 1000.0
 
 		#Run Commanda
-			command = "./thor.py -r " + str(j) + " -p "+ str(i) +" http://student02.cse.nd.edu:9010" + nitem
+			command = "./thor.py -r " + str(j) + " -p "+ str(i) +" http://student06.cse.nd.edu:9004" + nitem
 
 			p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 		#Check if still waiting
@@ -43,7 +44,7 @@ for nitem in nitems:
 		
 			if not FAILED:
 				endd = time.time()
-				size = os.path.getsize("/afs/nd.edu/user29/szhao4/final/final/www"+nitem)
+				size = os.path.getsize("/afs/nd.edu/user40/lyokum/gitlab_projects/systems_programming/cse-20289-sp18-project/www"+nitem)
 				stream, err  = p.communicate()#.stdout.read().split()
 				stream = stream.decode().split()
 				timme = round(endd-start,5)
