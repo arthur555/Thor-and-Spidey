@@ -142,7 +142,7 @@ HTTPStatus  handle_browse_request(Request *r) {
         strcat(link, ":");
         strcat(link, Port);
         strcat(link, r->uri);
-        strcat(link, "/");
+        if(strlen(r->uri) > 1) strcat(link, "/");
         strcat(link, entries->d_name);
 
         log("Link: %s", link);
@@ -174,7 +174,7 @@ HTTPStatus  handle_file_request(Request *r) {
     FILE *fs = NULL;
     char buffer[BUFSIZ] = {0};
     char *mimetype = NULL;
-    //size_t nread = 0;
+    size_t nread = 0;
 
     debug("Making some file stuff happen");
 
@@ -198,14 +198,18 @@ HTTPStatus  handle_file_request(Request *r) {
     log("Mimetype: %s", mimetype);
 
     /* Write HTTP Headers with OK status and determined Content-Type */
-    fprintf(r->file, "HTML/1.1 200 OK\nContent-Type: %s\n\r\n", mimetype);
-    fprintf(stderr, "HTML/1.1 200 OK\nContent-Type: %s\n\r\n", mimetype);
+    //fprintf(r->file, "HTML/1.0 200 OK\nContent-Type: %s\n\r\n", mimetype);
+    fprintf(r->file, "HTTP/1.0 200 OK\r\n");
+
+    /* Write HTML Description of Error*/
+    fprintf(r->file, "\r\n");
 
     /* Read from file and write to socket in chunks */
-    while((fgets(buffer, BUFSIZ, fs)) != NULL)
+    //fprintf(r->file, "<html></html>");
+    while((nread = fread(buffer, 1, 1, fs)) > 0)
     {
-        fputs(buffer, r->file);
-        fputs(buffer, stderr);
+        fwrite(buffer, nread, 1, r->file);
+        fwrite(buffer, nread, 1, stderr);
     }
 
     /* Close file, flush socket, deallocate mimetype, return OK */
@@ -309,8 +313,10 @@ HTTPStatus handle_cgi_request(Request *r) {
     }
 
     /* Copy data from popen to socket */
-    fgets(buffer, BUFSIZ, pfs);
-    write(r->fd, buffer, BUFSIZ);
+    while(fgets(buffer, BUFSIZ, pfs))
+    {
+        fputs(buffer, r->file);
+    }
 
     /* Close popen, flush socket, return OK */
     return HTTP_STATUS_OK;

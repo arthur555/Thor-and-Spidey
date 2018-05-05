@@ -26,12 +26,7 @@ int forking_server(int sfd) {
     	/* Accept request */
          Request* client = NULL;
          if ((client = accept_request(sfd)) == NULL) {
-             return -1;                       
-         }
-         if (parse_request(client) < 0) {
-             free_request(client);
-             return EXIT_FAILURE;
-                                             
+             return EXIT_FAILURE;                       
          }
         //FILE* client_file = client->file;
         /*if (!client_file) {
@@ -43,21 +38,22 @@ int forking_server(int sfd) {
         pid_t pid = fork();
         if (pid < 0) {
             fprintf(stderr,"Unable to fork:%s\n",strerror(errno));
+            free_request(client);
+            return EXIT_FAILURE;
             //fclose(client_file);
         } else if (pid==0) {
             debug("Handling client request");
-            close(sfd);
-            if (handle_request(client) != HTTP_STATUS_OK) {
+            handle_request(client);
+            free_request(client);
+            exit(EXIT_SUCCESS);
                 //fclose(client_file);
                 //handle_error(client,handle_request(client));
-                exit(EXIT_FAILURE);
-            } /*else {
+             /*else {
                 //handle_request(client);
                 //fclose(client_file);
                 exit(EXIT_SUCCESS);
             }*/
         } else {
-            //fclose(client_file);
             free_request(client);
         }
     }
