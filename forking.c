@@ -41,7 +41,7 @@ int forking_server(int sfd) {
             close(sfd);
             if (handle_request(client) != HTTP_STATUS_OK) {
                 //fclose(client_file);
-                handle_error(client,handle_request(client));
+                //handle_error(client,handle_request(client));
                 exit(EXIT_FAILURE);
             } /*else {
                 //handle_request(client);
