@@ -7,8 +7,8 @@ import subprocess
 # Variables
 
 
-#nitems = ["/html/1k.txt","/html/1M.txt","/html/1G.txt","/html/index.html", "/scripts/cowsay.sh", "/scripts/env.sh", "/text/hackers.txt", "/text/lyrics.txt" ]
-nitems = ["/html/index.html", "/scripts/cowsay.sh", "/scripts/env.sh", "/text/hackers.txt", "/text/lyrics.txt" ]
+nitems = ["/html/1k.txt","/html/1M.txt","/html/1G.txt","/html/index.html", "/scripts/cowsay.sh", "/scripts/env.sh", "/text/hackers.txt", "/text/lyrics.txt" ]
+#nitems = ["/html/index.html", "/scripts/cowsay.sh", "/scripts/env.sh", "/text/hackers.txt", "/text/lyrics.txt" ]
 processes = [1,2,3,4]
 requests = [2,3]
 # Heading
@@ -27,7 +27,7 @@ for nitem in nitems:
 			interval = max_run_time / 1000.0
 
 		#Run Commanda
-			command = "./thor.py -r " + str(j) + " -p "+ str(i) +" http://student06.cse.nd.edu:9004" + nitem
+			command = "./thor.py -r " + str(j) + " -p "+ str(i) +" http://student06.cse.nd.edu:9002" + nitem
 
 			p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 		#Check if still waiting

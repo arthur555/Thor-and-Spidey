@@ -8,6 +8,7 @@ Members
 
 Demonstration
 -------------
+Forking
 | process| request| uri                  | latency    | throughput    |
 |--------|--------|----------------------|------------|---------------|
 |       1|       2| /html/1k.txt         |     0.54222|         0.0018M|
@@ -70,6 +71,48 @@ Demonstration
 |       3|       3| /text/lyrics.txt     |     0.66267|        0.00135M|
 |       4|       2| /text/lyrics.txt     |     0.66261|        0.00135M|
 |       4|       3| /text/lyrics.txt     |      0.6627|        0.00135M|
+
+Single
+| process| request| uri                  | latency    | throughput    |
+|--------|--------|----------------------|------------|---------------|
+|       1|       2| /html/1k.txt         |     0.54221|         0.0018M|
+|       1|       3| /html/1k.txt         |     0.54229|         0.0018M|
+|       2|       2| /html/1k.txt         |     0.54253|         0.0018M|
+|       2|       3| /html/1k.txt         |      0.6626|        0.00147M|
+|       3|       2| /html/1k.txt         |     0.66257|        0.00147M|
+|       3|       3| /html/1k.txt         |     0.72268|        0.00135M|
+|       4|       2| /html/1k.txt         |     0.72239|        0.00135M|
+|       4|       3| /html/1k.txt         |     0.84305|        0.00116M|
+|       1|       2| /html/1M.txt         |    46.52078|         0.0215M|
+|       1|       3| /html/1M.txt         |         inf|             inf|
+
+| process| request| uri                  | latency    | throughput    |
+|--------|--------|----------------------|------------|---------------|
+|       1|       2| /html/index.html     |     0.54228|        0.00166M|
+|       1|       3| /html/index.html     |     0.54239|        0.00166M|
+|       2|       2| /html/index.html     |     0.66268|        0.00136M|
+|       2|       3| /html/index.html     |     0.66247|        0.00136M|
+|       3|       2| /html/index.html     |     0.66222|        0.00136M|
+|       3|       3| /html/index.html     |     0.72289|        0.00124M|
+|       4|       2| /html/index.html     |     0.72276|        0.00124M|
+|       4|       3| /html/index.html     |     0.84305|        0.00107M|
+|       1|       2| /scripts/cowsay.sh   |     0.66255|        0.00127M|
+|       1|       3| /scripts/cowsay.sh   |      0.8429|          0.001M|
+|       2|       2| /scripts/cowsay.sh   |     0.84284|          0.001M|
+|       2|       3| /scripts/cowsay.sh   |     0.96335|        0.00088M|
+|       3|       2| /scripts/cowsay.sh   |     1.14335|        0.00074M|
+|       3|       3| /scripts/cowsay.sh   |     1.26367|        0.00067M|
+|       4|       2| /scripts/cowsay.sh   |     1.26363|        0.00067M|
+|       4|       3| /scripts/cowsay.sh   |      1.6243|        0.00052M|
+|       1|       2| /scripts/env.sh      |     0.54235|        0.00015M|
+|       1|       3| /scripts/env.sh      |     0.54248|        0.00015M|
+|       2|       2| /scripts/env.sh      |     0.66262|        0.00012M|
+|       2|       3| /scripts/env.sh      |     0.66259|        0.00012M|
+|       3|       2| /scripts/env.sh      |     0.66258|        0.00012M|
+|       3|       3| /scripts/env.sh      |     0.72268|        0.00011M|
+|       4|       2| /scripts/env.sh      |     0.66271|        0.00012M|
+|       4|       3| /scripts/env.sh      |     0.72278|        0.00011M|
+|       1|       2| /text/hackers.txt    |     0.66255|        0.00538M|
 
 https://docs.google.com/presentation/d/1FCmiINX38Hws6R8kLgJhif5tlpsjffo-HjYdf1imUUA/edit?usp=sharing
 
