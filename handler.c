@@ -350,9 +350,10 @@ HTTPStatus  handle_error(Request *r, HTTPStatus status) {
 
     /* Write HTML Description of Error*/
     fprintf(r->file, "\r\n");
-    fprintf(r->file, "<html>\r\n");
-    fprintf(r->file, "<h>%s</h>\r\n", status_string);
-    fprintf(r->file, "</html>\r\n");
+    fprintf(r->file, "<html>\n");
+    fprintf(r->file, "<h1>%s</h1>\n", status_string);
+    fprintf(r->file, "<h2>Stuff's all borked. I blame nargles.</h2>\n");
+    fprintf(r->file, "</html>\n");
 
     /* Return specified status */
     fflush(r->file);
